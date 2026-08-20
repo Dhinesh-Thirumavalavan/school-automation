@@ -2,4 +2,4 @@
 nixPkgs = ["nodejs", "chromium"]
 
 [start]
-cmd = "npx tsx index.ts"
+cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) npx tsx index.ts"
