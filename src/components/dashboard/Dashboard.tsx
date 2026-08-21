@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types';
+import { API_URL } from '../../config';
 import AnalyticsSummary from './AnalyticsSummary';
 import BirthdayAutomation from '../students/BirthdayAutomation';
 import UpcomingEvents from './UpcomingEvents';
@@ -9,7 +10,7 @@ export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/students')
+    fetch(`${API_URL}/api/students`)
       .then((res) => res.json())
       .then((data) => {
         const mapped: Student[] = data.map((s: any) => ({

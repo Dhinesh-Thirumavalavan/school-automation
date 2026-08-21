@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 import FeeStatusBadge from './FeeStatusBadge';
 import FeeFormModal from './FeeFormModal';
 import RecordPaymentModal from './RecordPaymentModal';
@@ -25,7 +26,7 @@ export default function FeeTracker() {
   const fetchFees = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/fees');
+      const res = await fetch(`${API_URL}/api/fees`);
       const data = await res.json();
       setRecords(data);
     } catch (err) {
@@ -46,7 +47,7 @@ export default function FeeTracker() {
 
   const markAsPaid = async (id: string) => {
     try {
-      await fetch(`http://localhost:4000/api/fees/${id}/paid`, { method: 'PUT' });
+      await fetch(`${API_URL}/api/fees/${id}/paid`, { method: 'PUT' });
       await fetchFees();
     } catch (err) {
       console.error('Failed to mark as paid', err);
@@ -57,13 +58,13 @@ export default function FeeTracker() {
     setReminderSent(id);
     try {
       const englishMsg = `Reminder: Fee of ₹${record.amount_due} for ${record.students.name} is pending. Please pay at the earliest.`;
-      const translateRes = await fetch('http://localhost:4000/api/translate', {
+      const translateRes = await fetch(`${API_URL}/api/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: englishMsg }),
       });
       const { tamilText } = await translateRes.json();
-      await fetch('http://localhost:4000/api/send-whatsapp', {
+      await fetch(`${API_URL}/api/send-whatsapp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

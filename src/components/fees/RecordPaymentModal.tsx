@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 
 interface StudentResult {
   id: string;
@@ -35,7 +36,7 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
       return;
     }
     const timeout = setTimeout(() => {
-      fetch(`http://localhost:4000/api/students/search?q=${encodeURIComponent(query)}`)
+      fetch(`${API_URL}/api/students/search?q=${encodeURIComponent(query)}`)
         .then((res) => res.json())
         .then(setResults)
         .catch((err) => console.error(err));
@@ -47,7 +48,7 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
     setSelectedStudent(student);
     setResults([]);
     setQuery(student.name);
-    const res = await fetch(`http://localhost:4000/api/students/${student.id}/fees`);
+    const res = await fetch(`${API_URL}/api/students/${student.id}/fees`);
     const data = await res.json();
     setFeeRecords(data);
   };
@@ -57,7 +58,7 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
     if (!selectedFee || !selectedStudent) return;
     setSaving(true);
     try {
-      const res = await fetch('http://localhost:4000/api/payments', {
+      const res = await fetch(`${API_URL}/api/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

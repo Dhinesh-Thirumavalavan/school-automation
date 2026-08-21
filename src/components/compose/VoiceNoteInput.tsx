@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { API_URL } from '../../config';
 
 interface VoiceNoteInputProps {
   onTranscribed: (text: string, audioUrl: string) => void;
@@ -20,7 +21,7 @@ export default function VoiceNoteInput({ onTranscribed }: VoiceNoteInputProps) {
       const formData = new FormData();
       formData.append('audio', blob, name);
 
-      const res = await fetch('http://localhost:4000/api/transcribe', {
+      const res = await fetch(`${API_URL}/api/transcribe`, {
         method: 'POST',
         body: formData,
       });

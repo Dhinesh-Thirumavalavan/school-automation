@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 
 interface EventItem {
   id: string;
@@ -15,7 +16,7 @@ export default function UpcomingEvents() {
   const [notes, setNotes] = useState('');
 
   const fetchEvents = async () => {
-    const res = await fetch('http://localhost:4000/api/events');
+    const res = await fetch(`${API_URL}/api/events`);
     const data = await res.json();
     setEvents(data);
   };
@@ -38,7 +39,7 @@ export default function UpcomingEvents() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('http://localhost:4000/api/events', {
+    await fetch(`${API_URL}/api/events`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, event_date: eventDate, notes }),
@@ -51,7 +52,7 @@ export default function UpcomingEvents() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`http://localhost:4000/api/events/${id}`, { method: 'DELETE' });
+    await fetch(`${API_URL}/api/events/${id}`, { method: 'DELETE' });
     fetchEvents();
   };
 

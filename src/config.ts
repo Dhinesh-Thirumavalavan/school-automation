@@ -1,0 +1,1 @@
+export const API_URL = 'https://school-automation-production.up.railway.app';

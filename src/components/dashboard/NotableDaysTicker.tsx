@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { notableDays } from '../../data/notableDays';   
+import { API_URL } from '../../config';
 
 interface CustomEvent {
   id: string;
@@ -35,7 +36,7 @@ export default function NotableDaysTicker() {
   const [customEvents, setCustomEvents] = useState<CustomEvent[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/events')
+    fetch(`${API_URL}/api/events`)
       .then((res) => res.json())
       .then(setCustomEvents)
       .catch((err) => console.error('Failed to load events', err));

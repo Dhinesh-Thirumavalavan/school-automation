@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import VoiceNoteInput from './VoiceNoteInput';
+import { API_URL } from '../../config';
 
 export default function ComposeBroadcast() {
   const [englishText, setEnglishText] = useState('');
@@ -34,7 +35,7 @@ export default function ComposeBroadcast() {
   };
 
   const getRecipientPhones = async (): Promise<string[]> => {
-    const studentsRes = await fetch('http://localhost:4000/api/students');
+    const studentsRes = await fetch(`${API_URL}/api/students`);
     const students = await studentsRes.json();
 
     if (audienceMode === 'all') {
@@ -46,7 +47,7 @@ export default function ComposeBroadcast() {
         .map((s: any) => s.parent_phone);
     }
     if (audienceMode === 'unpaid') {
-      const feesRes = await fetch('http://localhost:4000/api/fees');
+      const feesRes = await fetch(`${API_URL}/api/fees`);
       const fees = await feesRes.json();
       const unpaidPhones = fees
         .filter((f: any) => f.status !== 'paid')
@@ -68,7 +69,7 @@ export default function ComposeBroadcast() {
     setLoading(true);
     setSent(false);
     try {
-      const res = await fetch('http://localhost:4000/api/translate', {
+      const res = await fetch(`${API_URL}/api/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: englishText }),
@@ -89,7 +90,7 @@ export default function ComposeBroadcast() {
       const message = tamilText ? `${englishText}\n\n${tamilText}` : englishText;
       const phones = await getRecipientPhones();
 
-      const res = await fetch('http://localhost:4000/api/send-whatsapp', {
+      const res = await fetch(`${API_URL}/api/send-whatsapp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phones, message, audience: getAudienceLabel() }),
@@ -124,7 +125,7 @@ export default function ComposeBroadcast() {
       formData.append('caption', englishText);
       formData.append('audience', getAudienceLabel());
 
-      const res = await fetch('http://localhost:4000/api/send-whatsapp-media', {
+      const res = await fetch(`${API_URL}/api/send-whatsapp-media`, {
         method: 'POST',
         body: formData,
       });

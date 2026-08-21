@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 
 interface MessageHistoryItem {
   id: string;
@@ -17,7 +18,7 @@ export default function MessageHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/message-history')
+    fetch(`${API_URL}/api/message-history`)
       .then((res) => res.json())
       .then(setMessages)
       .catch((err) => console.error(err))

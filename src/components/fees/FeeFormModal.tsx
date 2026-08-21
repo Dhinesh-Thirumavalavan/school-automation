@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 
 interface StudentOption {
   id: string;
@@ -19,7 +20,7 @@ export default function FeeFormModal({ onSave, onClose }: FeeFormModalProps) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/students')
+    fetch(`${API_URL}/api/students`)
       .then((res) => res.json())
       .then((data) => setStudents(data))
       .catch((err) => console.error('Failed to load students', err));
@@ -29,7 +30,7 @@ export default function FeeFormModal({ onSave, onClose }: FeeFormModalProps) {
     e.preventDefault();
     setSaving(true);
     try {
-      await fetch('http://localhost:4000/api/fees', {
+      await fetch(`${API_URL}/api/fees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

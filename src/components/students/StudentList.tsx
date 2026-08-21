@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types';
+import { API_URL } from '../../config';
 import BirthdayAutomation from './BirthdayAutomation';
 import StudentFormModal from './StudentFormModal';
 
@@ -24,7 +25,7 @@ export default function StudentList() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/students');
+      const res = await fetch(`${API_URL}/api/students`);
       const data = await res.json();
       const mapped: Student[] = data.map((s: any) => ({
         id: s.id,
@@ -71,13 +72,13 @@ export default function StudentList() {
       });
 
       if (editing) {
-        await fetch(`http://localhost:4000/api/students/${student.id}`, {
+        await fetch(`${API_URL}/api/students/${student.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body,
         });
       } else {
-        await fetch('http://localhost:4000/api/students', {
+        await fetch(`${API_URL}/api/students`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body,

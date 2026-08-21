@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../../config';
 
 export default function AnalyticsSummary() {
   const [studentCount, setStudentCount] = useState(0);
@@ -9,9 +10,9 @@ export default function AnalyticsSummary() {
   useEffect(() => {
     const fetchData = async () => {
       const [studentsRes, feesRes, historyRes] = await Promise.all([
-        fetch('http://localhost:4000/api/students'),
-        fetch('http://localhost:4000/api/fees'),
-        fetch('http://localhost:4000/api/message-history'),
+        fetch(`${API_URL}/api/students`),
+        fetch(`${API_URL}/api/fees`),
+        fetch(`${API_URL}/api/message-history`),
       ]);
       const students = await studentsRes.json();
       const fees = await feesRes.json();
