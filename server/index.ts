@@ -6,6 +6,7 @@ import multer from 'multer';
 import fs from 'fs';
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
+import QRCode from 'qrcode';
 import { createClient } from '@supabase/supabase-js';
 import cron from 'node-cron';
 
@@ -28,6 +29,7 @@ const supabase = createClient(
 );
 
 let waReady = false;
+let currentQR: string | null = null;
 
 const waClient = new Client({
   authStrategy: new LocalAuth(),
@@ -38,12 +40,14 @@ const waClient = new Client({
 });
 
 waClient.on('qr', (qr) => {
-  console.log('Scan this QR code with WhatsApp on your phone:');
+  currentQR = qr;
   qrcode.generate(qr, { small: true });
+  console.log('QR code received - visit /qr to scan it as an image');
 });
 
 waClient.on('ready', () => {
   waReady = true;
+  currentQR = null;
   console.log('✅ WhatsApp client is ready!');
 });
 
@@ -54,13 +58,33 @@ waClient.on('disconnected', () => {
 
 waClient.initialize();
 
+app.get('/qr', async (req, res) => {
+  if (waReady) {
+    return res.send('<h2>✅ WhatsApp is already connected!</h2>');
+  }
+  if (!currentQR) {
+    return res.send('<h2>⏳ Waiting for QR code to generate... refresh in a few seconds.</h2><script>setTimeout(() => location.reload(), 3000);</script>');
+  }
+  const qrImage = await QRCode.toDataURL(currentQR);
+  res.send(`
+    <html>
+      <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+        <h2>Scan this with WhatsApp → Linked Devices</h2>
+        <img src="${qrImage}" style="width:300px;height:300px;" />
+        <p>This page auto-refreshes every 5 seconds</p>
+        <script>setTimeout(() => location.reload(), 5000);</script>
+      </body>
+    </html>
+  `);
+});
+
 async function translateText(text: string): Promise<string> {
   const completion = await groq.chat.completions.create({
     model: 'openai/gpt-oss-20b',
     messages: [
       {
         role: 'user',
-        content: `Translate this school announcement into natural, everyday Tamil suitable for parents. Only return the Tamil translation, nothing else:\n\n"${text}"`,
+        content: `Translate this school announcement into natural, everyday Tamil suitable for parents. Keep it warm and friendly, similar to how Indian school WhatsApp groups communicate — feel free to naturally include relevant emojis (like 🙏, 🎉, 📢, 💐) where appropriate, matching the tone of the English text. Only return the Tamil translation, nothing else:\n\n"${text}"`,
       },
     ],
   });
@@ -161,7 +185,6 @@ app.post('/api/send-whatsapp', async (req, res) => {
   }
 });
 
-// Multi-file media send with correct mimetype handling
 app.post('/api/send-whatsapp-media', upload.array('media', 10), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
