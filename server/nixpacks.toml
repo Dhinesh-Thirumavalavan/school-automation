@@ -1,5 +1,0 @@
-[phases.setup]
-nixPkgs = ["nodejs", "chromium"]
-
-[start]
-cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) npx tsx index.ts"
