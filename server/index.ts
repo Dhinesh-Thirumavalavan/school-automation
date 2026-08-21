@@ -76,8 +76,8 @@ app.get('/qr', async (req, res) => {
       <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
         <h2>Scan this with WhatsApp → Linked Devices</h2>
         <img src="${qrImage}" style="width:300px;height:300px;" />
-        <p>This page auto-refreshes every 5 seconds</p>
-        <script>setTimeout(() => location.reload(), 5000);</script>
+        <p>This page auto-refreshes every 60 seconds</p>
+        <script>setTimeout(() => location.reload(), 60000);</script>
       </body>
     </html>
   `);
