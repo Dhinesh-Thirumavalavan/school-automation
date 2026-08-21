@@ -35,7 +35,12 @@ const waClient = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage', // helps with limited memory environments like Railway
+    ],
+    protocolTimeout: 120000, // 2 minutes, up from the default 30 seconds
   },
 });
 
