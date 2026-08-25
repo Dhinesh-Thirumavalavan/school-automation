@@ -16,7 +16,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 16 * 1024 * 1024 }, // 16MB per file, matching WhatsApp's own limit
+});
 
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
@@ -562,4 +565,32 @@ app.delete('/api/events/:eventId/media/:mediaId', async (req, res) => {
 
 app.listen(process.env.PORT || 4000, () => {
   console.log(`Server running on port ${process.env.PORT || 4000}`);
+});
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File too large — maximum size is 16MB per photo/video.' });
+  }
+  next(err);
+});
+
+app.get('/api/system-status', async (req, res) => {
+  try {
+    const { error: dbError } = await supabase.from('students').select('id').limit(1);
+    const dbConnected = !dbError;
+
+    res.json({
+      backendRunning: true,
+      whatsappReady: waReady,
+      databaseConnected: dbConnected,
+      serverTime: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({
+      backendRunning: true,
+      whatsappReady: false,
+      databaseConnected: false,
+      error: 'Status check failed',
+    });
+  }
 });
