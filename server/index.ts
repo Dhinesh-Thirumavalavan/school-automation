@@ -29,7 +29,9 @@ let waReady = false;
 let currentQR: string | null = null;
 
 const waClient = new Client({
-  authStrategy: new LocalAuth(),
+  authStrategy: new LocalAuth({
+    dataPath: '/app/.wwebjs_auth',
+  }),
   puppeteer: {
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
