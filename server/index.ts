@@ -100,7 +100,7 @@ app.get('/qr', async (req, res) => {
 
 async function translateText(text: string): Promise<string> {
   const completion = await groq.chat.completions.create({
-    model: 'openai/gpt-oss-20b',
+    model: 'qwen/qwen3.6-27b',
     messages: [
       {
         role: 'user',
