@@ -100,7 +100,7 @@ app.get('/qr', async (req, res) => {
 
 async function translateText(text: string): Promise<string> {
   const completion = await groq.chat.completions.create({
-    model: 'qwen/qwen3.6-27b',
+    model: 'openai/gpt-oss-20b',
     messages: [
       {
         role: 'user',
@@ -468,7 +468,7 @@ app.post('/api/generate-caption', upload.single('image'), async (req, res) => {
     const base64Image = imageData.toString('base64');
 
     const completion = await groq.chat.completions.create({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      model: 'qwen/qwen3.6-27b',
       messages: [
         {
           role: 'user',
