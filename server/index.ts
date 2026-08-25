@@ -261,13 +261,20 @@ app.post('/api/students/:id/photo', upload.single('photo'), async (req, res) => 
 // Send today's birthday wish with photo
 app.post('/api/students/:id/send-birthday', async (req, res) => {
   try {
+    if (!waReady) {
+      return res.status(503).json({ error: 'WhatsApp not ready yet, please try again in a few seconds' });
+    }
+
     const { data: student } = await supabase.from('students').select('*').eq('id', req.params.id).single();
     if (!student) return res.status(404).json({ error: 'Student not found' });
+
     const english = `Today's birthday: ${student.name}! God bless you, have a fantastic year ahead.`;
     const tamil = await translateText(english);
     const fullMessage = `${english}\n\n${tamil}`;
+
     const cleanPhone = student.parent_phone.replace(/[^0-9]/g, '');
     const numberId = await waClient.getNumberId(cleanPhone);
+
     if (numberId) {
       if (student.photo_url) {
         const media = await MessageMedia.fromUrl(student.photo_url);
@@ -275,11 +282,14 @@ app.post('/api/students/:id/send-birthday', async (req, res) => {
       } else {
         await waClient.sendMessage(numberId._serialized, fullMessage);
       }
+    } else {
+      return res.status(400).json({ error: 'Invalid WhatsApp number' });
     }
+
     await logMessage(english, tamil, `Birthday — ${student.name}`, 1);
     res.json({ success: true });
   } catch (err: any) {
-    console.error(err);
+    console.error('send-birthday error:', err);
     res.status(500).json({ error: err.message });
   }
 });
