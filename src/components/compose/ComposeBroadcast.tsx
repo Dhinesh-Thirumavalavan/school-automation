@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import VoiceNoteInput from './VoiceNoteInput';
+import SendConfirmModal from './SendConfirmModal';
 import { API_URL } from '../../config';
 
 export default function ComposeBroadcast() {
@@ -13,6 +14,7 @@ export default function ComposeBroadcast() {
   const [mediaPreviewUrls, setMediaPreviewUrls] = useState<string[]>([]);
   const [clarityIssue, setClarityIssue] = useState<string | null>(null);
   const [messageStatus, setMessageStatus] = useState<'idle' | 'sending' | 'sent' | 'delivered' | 'read'>('idle');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const classListOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -291,14 +293,14 @@ export default function ComposeBroadcast() {
         </button>
 
         {englishText && mediaFiles.length === 0 && (
-          <button onClick={handleSend} disabled={sending} className="mt-3 ml-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
-            {sending ? 'Sending...' : 'Send to Parent Group'}
+          <button onClick={() => setShowConfirm(true)} disabled={sending} className="mt-3 ml-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
+            Review & Send
           </button>
         )}
 
         {mediaFiles.length > 0 && (
-          <button onClick={handleSendMedia} disabled={sending} className="mt-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
-            {sending ? 'Sending...' : `Send ${mediaFiles.length} File${mediaFiles.length > 1 ? 's' : ''} to Parent Group`}
+          <button onClick={() => setShowConfirm(true)} disabled={sending} className="mt-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
+            Review & Send {mediaFiles.length} File{mediaFiles.length > 1 ? 's' : ''}
           </button>
         )}
 
@@ -406,6 +408,27 @@ export default function ComposeBroadcast() {
           )}
         </div>
       </div>
+
+      {showConfirm && (
+        <SendConfirmModal
+          englishText={englishText}
+          tamilText={tamilText}
+          mediaPreviewUrls={mediaPreviewUrls}
+          mediaFiles={mediaFiles}
+          voiceAudioUrl={voiceAudioUrl}
+          audienceLabel={getAudienceLabel()}
+          sending={sending}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={async () => {
+            if (mediaFiles.length > 0) {
+              await handleSendMedia();
+            } else {
+              await handleSend();
+            }
+            setShowConfirm(false);
+          }}
+        />
+      )}
     </div>
   );
 }
