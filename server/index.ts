@@ -533,6 +533,33 @@ cron.schedule('0 10 * * *', async () => {
   }
 });
 
+app.delete('/api/events/:eventId/media/:mediaId', async (req, res) => {
+  try {
+    const { data: mediaItem } = await supabase
+      .from('event_media')
+      .select('*')
+      .eq('id', req.params.mediaId)
+      .single();
+
+    if (mediaItem) {
+      // Extract the storage file path from the public URL and remove it from storage too
+      const urlParts = mediaItem.media_url.split('/event-media/');
+      const filePath = urlParts[1];
+      if (filePath) {
+        await supabase.storage.from('event-media').remove([filePath]);
+      }
+    }
+
+    const { error } = await supabase.from('event_media').delete().eq('id', req.params.mediaId);
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(process.env.PORT || 4000, () => {
   console.log(`Server running on port ${process.env.PORT || 4000}`);
 });
