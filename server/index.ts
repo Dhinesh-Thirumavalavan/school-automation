@@ -23,10 +23,7 @@ const groq = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
 
 let waReady = false;
 let currentQR: string | null = null;
@@ -35,12 +32,8 @@ const waClient = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage', // helps with limited memory environments like Railway
-    ],
-    protocolTimeout: 120000, // 2 minutes, up from the default 30 seconds
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    protocolTimeout: 120000,
   },
 });
 
@@ -64,9 +57,7 @@ waClient.on('disconnected', () => {
 waClient.initialize();
 
 app.get('/qr', async (req, res) => {
-  if (waReady) {
-    return res.send('<h2>✅ WhatsApp is already connected!</h2>');
-  }
+  if (waReady) return res.send('<h2>✅ WhatsApp is already connected!</h2>');
   if (!currentQR) {
     return res.send('<h2>⏳ Waiting for QR code to generate... refresh in a few seconds.</h2><script>setTimeout(() => location.reload(), 3000);</script>');
   }
@@ -114,23 +105,16 @@ async function sendToPhone(phone: string, message: string) {
   }
 }
 
-async function logMessage(
-  englishText: string,
-  tamilText: string,
-  audience: string,
-  totalRecipients: number
-) {
-  await supabase.from('message_history').insert([
-    {
-      english_text: englishText,
-      tamil_text: tamilText,
-      audience,
-      sent_by: 'Admin',
-      total_recipients: totalRecipients,
-      delivered: totalRecipients,
-      read: 0,
-    },
-  ]);
+async function logMessage(englishText: string, tamilText: string, audience: string, totalRecipients: number) {
+  await supabase.from('message_history').insert([{
+    english_text: englishText,
+    tamil_text: tamilText,
+    audience,
+    sent_by: 'Admin',
+    total_recipients: totalRecipients,
+    delivered: totalRecipients,
+    read: 0,
+  }]);
 }
 
 app.post('/api/translate', async (req, res) => {
@@ -146,18 +130,14 @@ app.post('/api/translate', async (req, res) => {
 
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No audio file provided' });
-    }
+    if (!req.file) return res.status(400).json({ error: 'No audio file provided' });
     const ext = req.file.originalname.split('.').pop() || 'mp3';
     const newPath = `${req.file.path}.${ext}`;
     fs.renameSync(req.file.path, newPath);
-
     const transcription = await groq.audio.transcriptions.create({
       file: fs.createReadStream(newPath),
       model: 'whisper-large-v3',
     });
-
     fs.unlinkSync(newPath);
     res.json({ text: transcription.text });
   } catch (err) {
@@ -179,10 +159,8 @@ app.post('/api/send-whatsapp', async (req, res) => {
         results.push({ phone: cleanPhone, status: 'failed' });
       }
     }
-
     const [englishPart, tamilPart] = message.split('\n\n');
     await logMessage(englishPart, tamilPart || '', audience || 'Custom', phones.length);
-
     res.json({ success: true, results });
   } catch (err) {
     console.error(err);
@@ -193,10 +171,7 @@ app.post('/api/send-whatsapp', async (req, res) => {
 app.post('/api/send-whatsapp-media', upload.array('media', 10), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
-    if (!files || files.length === 0) {
-      return res.status(400).json({ error: 'No media files provided' });
-    }
-
+    if (!files || files.length === 0) return res.status(400).json({ error: 'No media files provided' });
     const { phones, caption, audience } = req.body;
     const phoneList = JSON.parse(phones);
 
@@ -210,7 +185,6 @@ app.post('/api/send-whatsapp-media', upload.array('media', 10), async (req, res)
       if (!waReady) continue;
       const numberId = await waClient.getNumberId(cleanPhone);
       if (!numberId) continue;
-
       for (let i = 0; i < mediaObjects.length; i++) {
         const options = i === 0 ? { caption } : {};
         await waClient.sendMessage(numberId._serialized, mediaObjects[i], options);
@@ -219,7 +193,6 @@ app.post('/api/send-whatsapp-media', upload.array('media', 10), async (req, res)
 
     files.forEach((file) => fs.unlinkSync(file.path));
     await logMessage(caption || `[${files.length} media files]`, '', audience || 'Custom', phoneList.length);
-
     res.json({ success: true, count: files.length });
   } catch (err) {
     console.error(err);
@@ -228,11 +201,7 @@ app.post('/api/send-whatsapp-media', upload.array('media', 10), async (req, res)
 });
 
 app.get('/api/message-history', async (req, res) => {
-  const { data, error } = await supabase
-    .from('message_history')
-    .select('*')
-    .order('sent_at', { ascending: false })
-    .limit(50);
+  const { data, error } = await supabase.from('message_history').select('*').order('sent_at', { ascending: false }).limit(50);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
@@ -245,83 +214,91 @@ app.get('/api/students', async (req, res) => {
 
 app.get('/api/students/search', async (req, res) => {
   const q = (req.query.q as string) || '';
-  const { data, error } = await supabase
-    .from('students')
-    .select('*')
-    .or(`name.ilike.%${q}%,class.ilike.%${q}%`)
-    .limit(10);
+  const { data, error } = await supabase.from('students').select('*').or(`name.ilike.%${q}%,class.ilike.%${q}%`).limit(10);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
 app.get('/api/students/:id/fees', async (req, res) => {
-  const { data, error } = await supabase
-    .from('fee_records')
-    .select('*')
-    .eq('student_id', req.params.id)
-    .neq('status', 'paid');
+  const { data, error } = await supabase.from('fee_records').select('*').eq('student_id', req.params.id).neq('status', 'paid');
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
 app.post('/api/students', async (req, res) => {
-  const {
-    name, class: studentClass, section, roll_no, parent_phone, parent_name,
-    alternate_phone, gender, address, blood_group, admission_date, birthday,
-  } = req.body;
-  const { data, error } = await supabase
-    .from('students')
-    .insert([{
-      name, class: studentClass, section, roll_no, parent_phone, parent_name,
-      alternate_phone, gender, address, blood_group, admission_date, birthday,
-    }])
-    .select();
+  const { name, class: studentClass, section, roll_no, parent_phone, parent_name, alternate_phone, gender, address, blood_group, admission_date, birthday } = req.body;
+  const { data, error } = await supabase.from('students').insert([{ name, class: studentClass, section, roll_no, parent_phone, parent_name, alternate_phone, gender, address, blood_group, admission_date, birthday }]).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
 });
 
 app.put('/api/students/:id', async (req, res) => {
-  const {
-    name, class: studentClass, section, roll_no, parent_phone, parent_name,
-    alternate_phone, gender, address, blood_group, admission_date, birthday,
-  } = req.body;
-  const { data, error } = await supabase
-    .from('students')
-    .update({
-      name, class: studentClass, section, roll_no, parent_phone, parent_name,
-      alternate_phone, gender, address, blood_group, admission_date, birthday,
-    })
-    .eq('id', req.params.id)
-    .select();
+  const { name, class: studentClass, section, roll_no, parent_phone, parent_name, alternate_phone, gender, address, blood_group, admission_date, birthday } = req.body;
+  const { data, error } = await supabase.from('students').update({ name, class: studentClass, section, roll_no, parent_phone, parent_name, alternate_phone, gender, address, blood_group, admission_date, birthday }).eq('id', req.params.id).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
 });
 
+// Same-day birthday photo upload
+app.post('/api/students/:id/photo', upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No photo provided' });
+    const fileExt = req.file.originalname.split('.').pop();
+    const fileName = `${req.params.id}-${Date.now()}.${fileExt}`;
+    const fileData = fs.readFileSync(req.file.path);
+    const { error: uploadError } = await supabase.storage.from('student-photos').upload(fileName, fileData, { contentType: req.file.mimetype, upsert: true });
+    if (uploadError) throw uploadError;
+    const { data: publicUrlData } = supabase.storage.from('student-photos').getPublicUrl(fileName);
+    await supabase.from('students').update({ photo_url: publicUrlData.publicUrl }).eq('id', req.params.id);
+    fs.unlinkSync(req.file.path);
+    res.json({ photo_url: publicUrlData.publicUrl });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send today's birthday wish with photo
+app.post('/api/students/:id/send-birthday', async (req, res) => {
+  try {
+    const { data: student } = await supabase.from('students').select('*').eq('id', req.params.id).single();
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    const english = `Today's birthday: ${student.name}! God bless you, have a fantastic year ahead.`;
+    const tamil = await translateText(english);
+    const fullMessage = `${english}\n\n${tamil}`;
+    const cleanPhone = student.parent_phone.replace(/[^0-9]/g, '');
+    const numberId = await waClient.getNumberId(cleanPhone);
+    if (numberId) {
+      if (student.photo_url) {
+        const media = await MessageMedia.fromUrl(student.photo_url);
+        await waClient.sendMessage(numberId._serialized, media, { caption: fullMessage });
+      } else {
+        await waClient.sendMessage(numberId._serialized, fullMessage);
+      }
+    }
+    await logMessage(english, tamil, `Birthday — ${student.name}`, 1);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/fees', async (req, res) => {
-  const { data, error } = await supabase
-    .from('fee_records')
-    .select('*, students(name, class, parent_phone)')
-    .order('due_date');
+  const { data, error } = await supabase.from('fee_records').select('*, students(name, class, parent_phone)').order('due_date');
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
 
 app.post('/api/fees', async (req, res) => {
   const { student_id, amount_due, due_date, status } = req.body;
-  const { data, error } = await supabase
-    .from('fee_records')
-    .insert([{ student_id, amount_due, due_date, status: status || 'unpaid' }])
-    .select();
+  const { data, error } = await supabase.from('fee_records').insert([{ student_id, amount_due, due_date, status: status || 'unpaid' }]).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
 });
 
 app.put('/api/fees/:id/paid', async (req, res) => {
-  const { data, error } = await supabase
-    .from('fee_records')
-    .update({ status: 'paid' })
-    .eq('id', req.params.id)
-    .select();
+  const { data, error } = await supabase.from('fee_records').update({ status: 'paid' }).eq('id', req.params.id).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
 });
@@ -330,15 +307,9 @@ app.post('/api/payments', async (req, res) => {
   try {
     const { fee_record_id, student_id, amount_paid, payment_mode } = req.body;
     const receiptNo = `RCT-${Date.now().toString().slice(-8)}`;
-
-    const { data: payment, error: payError } = await supabase
-      .from('payments')
-      .insert([{ fee_record_id, student_id, amount_paid, payment_mode, receipt_no: receiptNo }])
-      .select();
+    const { data: payment, error: payError } = await supabase.from('payments').insert([{ fee_record_id, student_id, amount_paid, payment_mode, receipt_no: receiptNo }]).select();
     if (payError) throw payError;
-
     await supabase.from('fee_records').update({ status: 'paid' }).eq('id', fee_record_id);
-
     const { data: student } = await supabase.from('students').select('*').eq('id', student_id).single();
     if (student) {
       const english = `Payment received! ₹${amount_paid} (${payment_mode.toUpperCase()}). Receipt No: ${receiptNo}. Thank you!`;
@@ -346,7 +317,6 @@ app.post('/api/payments', async (req, res) => {
       await sendToPhone(student.parent_phone, `${english}\n\n${tamil}`);
       await logMessage(english, tamil, `Payment Receipt — ${student.name}`, 1);
     }
-
     res.json(payment[0]);
   } catch (err: any) {
     console.error(err);
@@ -362,10 +332,7 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', async (req, res) => {
   const { title, event_date, notes } = req.body;
-  const { data, error } = await supabase
-    .from('events')
-    .insert([{ title, event_date, notes }])
-    .select();
+  const { data, error } = await supabase.from('events').insert([{ title, event_date, notes }]).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
 });
@@ -376,18 +343,72 @@ app.delete('/api/events/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+// Event media upload
+app.post('/api/events/:id/media', upload.array('media', 10), async (req, res) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) return res.status(400).json({ error: 'No files provided' });
+    const { caption } = req.body;
+    const uploaded = [];
+    for (const file of files) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${req.params.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+      const fileData = fs.readFileSync(file.path);
+      const { error: uploadError } = await supabase.storage.from('event-media').upload(fileName, fileData, { contentType: file.mimetype });
+      if (uploadError) throw uploadError;
+      const { data: publicUrlData } = supabase.storage.from('event-media').getPublicUrl(fileName);
+      const { data: mediaRow } = await supabase.from('event_media').insert([{ event_id: req.params.id, media_url: publicUrlData.publicUrl, media_type: file.mimetype.startsWith('video') ? 'video' : 'image', caption }]).select();
+      uploaded.push(mediaRow?.[0]);
+      fs.unlinkSync(file.path);
+    }
+    res.json(uploaded);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/events/:id/media', async (req, res) => {
+  const { data, error } = await supabase.from('event_media').select('*').eq('event_id', req.params.id).order('uploaded_at');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/events/:id/send', async (req, res) => {
+  try {
+    const { phones, mediaIds } = req.body;
+    const { data: mediaItems } = await supabase.from('event_media').select('*').in('id', mediaIds);
+    const { data: event } = await supabase.from('events').select('*').eq('id', req.params.id).single();
+    for (const phone of phones) {
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      if (!waReady) continue;
+      const numberId = await waClient.getNumberId(cleanPhone);
+      if (!numberId) continue;
+      for (let i = 0; i < (mediaItems || []).length; i++) {
+        const item = mediaItems![i];
+        const media = await MessageMedia.fromUrl(item.media_url);
+        const options = i === 0 ? { caption: item.caption || event?.title } : {};
+        await waClient.sendMessage(numberId._serialized, media, options);
+      }
+    }
+    await logMessage(event?.title || 'Event photos', '', 'Event Media', phones.length);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 cron.schedule('0 8 * * *', async () => {
-  console.log('Running daily birthday check...');
+  console.log('Running daily birthday fallback check...');
   const today = new Date();
   const mmdd = `${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
   const { data: students } = await supabase.from('students').select('*').eq('birthday', mmdd);
-
   for (const student of students || []) {
     const english = `Today's birthday: ${student.name}! God bless you, have a fantastic year ahead.`;
     const tamil = await translateText(english);
     await sendToPhone(student.parent_phone, `${english}\n\n${tamil}`);
-    await logMessage(english, tamil, `Birthday — ${student.name}`, 1);
+    await logMessage(english, tamil, `Birthday (auto) — ${student.name}`, 1);
     console.log(`Sent birthday wish for ${student.name}`);
   }
 });
@@ -395,13 +416,7 @@ cron.schedule('0 8 * * *', async () => {
 cron.schedule('0 9 * * *', async () => {
   console.log('Running overdue status check...');
   const today = new Date().toISOString().split('T')[0];
-
-  const { data: overdue } = await supabase
-    .from('fee_records')
-    .select('id')
-    .eq('status', 'unpaid')
-    .lt('due_date', today);
-
+  const { data: overdue } = await supabase.from('fee_records').select('id').eq('status', 'unpaid').lt('due_date', today);
   for (const record of overdue || []) {
     await supabase.from('fee_records').update({ status: 'overdue' }).eq('id', record.id);
   }
@@ -410,36 +425,22 @@ cron.schedule('0 9 * * *', async () => {
 
 cron.schedule('0 10 * * *', async () => {
   console.log('Running daily fee reminder check...');
-
   const twoDaysFromNow = new Date();
   twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
   const upcomingDate = twoDaysFromNow.toISOString().split('T')[0];
-
-  const { data: upcoming } = await supabase
-    .from('fee_records')
-    .select('*, students(name, parent_phone)')
-    .eq('due_date', upcomingDate)
-    .eq('status', 'unpaid');
-
+  const { data: upcoming } = await supabase.from('fee_records').select('*, students(name, parent_phone)').eq('due_date', upcomingDate).eq('status', 'unpaid');
   for (const fee of upcoming || []) {
     const english = `Gentle reminder: Fee of ₹${fee.amount_due} for ${fee.students.name} is due in 2 days. Please pay at the earliest.`;
     const tamil = await translateText(english);
     await sendToPhone(fee.students.parent_phone, `${english}\n\n${tamil}`);
     await logMessage(english, tamil, `Fee Reminder — ${fee.students.name}`, 1);
-    console.log(`Sent gentle reminder for ${fee.students.name}`);
   }
-
-  const { data: overdue } = await supabase
-    .from('fee_records')
-    .select('*, students(name, parent_phone)')
-    .eq('status', 'overdue');
-
+  const { data: overdue } = await supabase.from('fee_records').select('*, students(name, parent_phone)').eq('status', 'overdue');
   for (const fee of overdue || []) {
     const english = `URGENT: Fee of ₹${fee.amount_due} for ${fee.students.name} is now OVERDUE. Please clear this immediately to avoid further action.`;
     const tamil = await translateText(english);
     await sendToPhone(fee.students.parent_phone, `${english}\n\n${tamil}`);
     await logMessage(english, tamil, `Overdue Notice — ${fee.students.name}`, 1);
-    console.log(`Sent overdue notice for ${fee.students.name}`);
   }
 });
 

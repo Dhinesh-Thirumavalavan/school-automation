@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../config';
+import EventMediaModal from './EventMediaModal';
 
 interface EventItem {
   id: string;
@@ -14,6 +15,7 @@ export default function UpcomingEvents() {
   const [title, setTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [mediaEvent, setMediaEvent] = useState<{ id: string; title: string } | null>(null);
 
   const fetchEvents = async () => {
     const res = await fetch(`${API_URL}/api/events`);
@@ -32,10 +34,7 @@ export default function UpcomingEvents() {
     return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const upcoming = events
-    .map((e) => ({ ...e, days: daysUntil(e.event_date) }))
-    .filter((e) => e.days >= 0 && e.days <= 60)
-    .sort((a, b) => a.days - b.days);
+  const upcoming = events.map((e) => ({ ...e, days: daysUntil(e.event_date) })).filter((e) => e.days >= 0 && e.days <= 60).sort((a, b) => a.days - b.days);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,42 +59,17 @@ export default function UpcomingEvents() {
     <div className="bg-white border border-slate-200 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-slate-800">Upcoming Notable Days</h3>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="text-xs font-medium text-emerald-700 hover:underline"
-        >
+        <button onClick={() => setShowForm(!showForm)} className="text-xs font-medium text-emerald-700 hover:underline">
           {showForm ? 'Cancel' : '+ Add'}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleAdd} className="mb-4 space-y-2 bg-slate-50 rounded-lg p-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Independence Day, PTA Meeting, Sports Day"
-            required
-            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <input
-            type="date"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            required
-            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <input
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-          <button
-            type="submit"
-            className="w-full bg-emerald-600 text-white text-xs font-medium py-1.5 rounded-lg hover:bg-emerald-700"
-          >
-            Save Event
-          </button>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Onam, PTA Meeting, Sports Day" required className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <button type="submit" className="w-full bg-emerald-600 text-white text-xs font-medium py-1.5 rounded-lg hover:bg-emerald-700">Save Event</button>
         </form>
       )}
 
@@ -113,16 +87,18 @@ export default function UpcomingEvents() {
                 <span className="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
                   {e.days === 0 ? 'Today' : `${e.days}d`}
                 </span>
-                <button
-                  onClick={() => handleDelete(e.id)}
-                  className="text-xs text-slate-400 hover:text-red-500"
-                >
-                  ✕
+                <button onClick={() => setMediaEvent({ id: e.id, title: e.title })} className="text-xs text-emerald-700 hover:underline">
+                  📷 Photos
                 </button>
+                <button onClick={() => handleDelete(e.id)} className="text-xs text-slate-400 hover:text-red-500">✕</button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {mediaEvent && (
+        <EventMediaModal eventId={mediaEvent.id} eventTitle={mediaEvent.title} onClose={() => setMediaEvent(null)} />
       )}
     </div>
   );
