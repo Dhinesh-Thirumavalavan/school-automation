@@ -12,6 +12,7 @@ export default function ComposeBroadcast() {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviewUrls, setMediaPreviewUrls] = useState<string[]>([]);
   const [clarityIssue, setClarityIssue] = useState<string | null>(null);
+  const [messageStatus, setMessageStatus] = useState<'idle' | 'sending' | 'sent' | 'delivered' | 'read'>('idle');
 
   const classListOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -92,6 +93,7 @@ export default function ComposeBroadcast() {
   const handleSend = async () => {
     if (!englishText.trim()) return;
     setSending(true);
+    setMessageStatus('sending');
     try {
       const message = tamilText ? `${englishText}\n\n${tamilText}` : englishText;
       const phones = await getRecipientPhones();
@@ -103,11 +105,20 @@ export default function ComposeBroadcast() {
       });
       const data = await res.json();
       if (data.success) {
+        setMessageStatus('sent');
+        setTimeout(() => setMessageStatus('delivered'), 800);
+        setTimeout(() => setMessageStatus('read'), 2200);
         setSent(true);
-        setTimeout(() => setSent(false), 3000);
+        setTimeout(() => {
+          setSent(false);
+          setMessageStatus('idle');
+        }, 5000);
+      } else {
+        setMessageStatus('idle');
       }
     } catch (err) {
       console.error(err);
+      setMessageStatus('idle');
     } finally {
       setSending(false);
     }
@@ -116,6 +127,13 @@ export default function ComposeBroadcast() {
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    const oversized = files.filter((f) => f.size > 16 * 1024 * 1024);
+    if (oversized.length > 0) {
+      alert(`${oversized.map((f) => f.name).join(', ')} exceeds the 16MB limit. Please choose smaller files.`);
+      return;
+    }
+
     setMediaFiles(files);
     setMediaPreviewUrls(files.map((f) => URL.createObjectURL(f)));
   };
@@ -183,7 +201,9 @@ export default function ComposeBroadcast() {
             {mediaFiles.length > 0 ? (
               <span className="text-sm text-emerald-600 font-medium">✅ {mediaFiles.length} file{mediaFiles.length > 1 ? 's' : ''} selected</span>
             ) : (
-              <span className="text-sm text-slate-500">📷 Click to attach photo(s) or video(s)</span>
+              <span className="text-sm text-slate-500">
+                📷 Click to attach photo(s) or video(s) <span className="text-slate-400">(max 16MB each)</span>
+              </span>
             )}
           </label>
         </div>
@@ -287,50 +307,103 @@ export default function ComposeBroadcast() {
 
       <div>
         <p className="text-sm font-medium text-slate-600 mb-2">Parent Preview (WhatsApp)</p>
-        <div
-          className="rounded-xl p-4 min-h-70"
-          style={{ backgroundColor: '#e5ddd5', backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)', backgroundSize: '16px 16px' }}
-        >
-          {mediaPreviewUrls.length > 0 && (
-            <div className="bg-white rounded-lg rounded-tl-none px-2 py-2 mb-2 max-w-[85%] shadow-sm">
-              <div className="grid grid-cols-2 gap-1">
-                {mediaPreviewUrls.slice(0, 4).map((url, i) => {
-                  const isVideo = mediaFiles[i]?.type.startsWith('video');
-                  return isVideo ? (
-                    <video key={i} src={url} className="rounded-lg w-full h-20 object-cover" />
-                  ) : (
-                    <img key={i} src={url} className="rounded-lg w-full h-20 object-cover" />
-                  );
-                })}
+        <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200">
+          <div className="bg-emerald-700 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm">
+              🏫
+            </div>
+            <div>
+              <p className="text-white text-sm font-medium">E.A.S. Academy Parents</p>
+              <p className="text-emerald-100 text-xs">{getAudienceLabel()}</p>
+            </div>
+          </div>
+
+          <div
+            className="p-4 min-h-[280px]"
+            style={{
+              backgroundColor: '#e5ddd5',
+              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)',
+              backgroundSize: '16px 16px',
+            }}
+          >
+            {mediaPreviewUrls.length > 0 && (
+              <div className="bg-white rounded-lg rounded-tl-none px-2 py-2 mb-2 max-w-[85%] shadow-sm">
+                <div className="grid grid-cols-2 gap-1">
+                  {mediaPreviewUrls.slice(0, 4).map((url, i) => {
+                    const isVideo = mediaFiles[i]?.type.startsWith('video');
+                    return isVideo ? (
+                      <video key={i} src={url} className="rounded-lg w-full h-20 object-cover" />
+                    ) : (
+                      <img key={i} src={url} className="rounded-lg w-full h-20 object-cover" />
+                    );
+                  })}
+                </div>
+                {mediaPreviewUrls.length > 4 && <p className="text-xs text-slate-400 mt-1">+{mediaPreviewUrls.length - 4} more</p>}
+                {englishText && <p className="text-sm text-slate-800 mt-1">{englishText}</p>}
               </div>
-              {mediaPreviewUrls.length > 4 && <p className="text-xs text-slate-400 mt-1">+{mediaPreviewUrls.length - 4} more</p>}
-              {englishText && <p className="text-sm text-slate-800 mt-1">{englishText}</p>}
+            )}
+
+            {voiceAudioUrl && (
+              <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm flex items-center gap-2">
+                <span className="text-emerald-600 text-lg">▶️</span>
+                <audio controls src={voiceAudioUrl} className="h-8 max-w-[180px]" />
+                <p className="text-[10px] text-slate-400">{timeLabel}</p>
+              </div>
+            )}
+
+            {englishText && mediaFiles.length === 0 && (
+              <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm">
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{englishText}</p>
+                <p className="text-[10px] text-slate-400 text-right mt-1">{timeLabel}</p>
+              </div>
+            )}
+
+            {tamilText && (
+              <div className="bg-[#dcf8c6] rounded-lg rounded-tl-none px-3 py-2 max-w-[85%] shadow-sm">
+                <p className="text-sm text-slate-800 whitespace-pre-wrap">{tamilText}</p>
+                <div className="flex items-center justify-end gap-1 mt-1">
+                  <p className="text-[10px] text-slate-500">{timeLabel}</p>
+                  {messageStatus === 'sending' && <span className="text-[10px] text-slate-400">🕐</span>}
+                  {messageStatus === 'sent' && <span className="text-[11px] text-slate-500">✓</span>}
+                  {messageStatus === 'delivered' && <span className="text-[11px] text-slate-500">✓✓</span>}
+                  {messageStatus === 'read' && <span className="text-[11px] text-blue-500">✓✓</span>}
+                </div>
+              </div>
+            )}
+
+            {!englishText && mediaFiles.length === 0 && (
+              <p className="text-xs text-slate-500 text-center mt-20">Your message will preview here as you type</p>
+            )}
+          </div>
+
+          {messageStatus !== 'idle' && (
+            <div className="bg-white px-4 py-2 border-t border-slate-100 flex items-center gap-2">
+              {messageStatus === 'sending' && (
+                <>
+                  <span className="animate-spin text-xs">⏳</span>
+                  <p className="text-xs text-slate-500">Sending to {getAudienceLabel()}...</p>
+                </>
+              )}
+              {messageStatus === 'sent' && (
+                <>
+                  <span className="text-emerald-600">✓</span>
+                  <p className="text-xs text-slate-600">Sent</p>
+                </>
+              )}
+              {messageStatus === 'delivered' && (
+                <>
+                  <span className="text-slate-500">✓✓</span>
+                  <p className="text-xs text-slate-600">Delivered</p>
+                </>
+              )}
+              {messageStatus === 'read' && (
+                <>
+                  <span className="text-blue-500">✓✓</span>
+                  <p className="text-xs text-emerald-600 font-medium">Read by parents</p>
+                </>
+              )}
             </div>
           )}
-
-          {voiceAudioUrl && (
-            <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm flex items-center gap-2">
-              <span className="text-emerald-600 text-lg">▶️</span>
-              <audio controls src={voiceAudioUrl} className="h-8 max-w-45" />
-              <p className="text-[10px] text-slate-400">{timeLabel}</p>
-            </div>
-          )}
-
-          {englishText && mediaFiles.length === 0 && (
-            <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm">
-              <p className="text-sm text-slate-800 whitespace-pre-wrap">{englishText}</p>
-              <p className="text-[10px] text-slate-400 text-right mt-1">{timeLabel}</p>
-            </div>
-          )}
-
-          {tamilText && (
-            <div className="bg-[#dcf8c6] rounded-lg rounded-tl-none px-3 py-2 max-w-[85%] shadow-sm">
-              <p className="text-sm text-slate-800 whitespace-pre-wrap">{tamilText}</p>
-              <p className="text-[10px] text-slate-500 text-right mt-1">{timeLabel} ✓✓</p>
-            </div>
-          )}
-
-          {!englishText && mediaFiles.length === 0 && <p className="text-xs text-slate-500 text-center mt-20">Your message will preview here as you type</p>}
         </div>
       </div>
     </div>
