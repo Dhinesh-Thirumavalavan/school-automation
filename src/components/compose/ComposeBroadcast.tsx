@@ -319,7 +319,7 @@ export default function ComposeBroadcast() {
           </div>
 
           <div
-            className="p-4 min-h-[280px]"
+            className="p-4 min-h-70"
             style={{
               backgroundColor: '#e5ddd5',
               backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)',
@@ -346,7 +346,7 @@ export default function ComposeBroadcast() {
             {voiceAudioUrl && (
               <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm flex items-center gap-2">
                 <span className="text-emerald-600 text-lg">▶️</span>
-                <audio controls src={voiceAudioUrl} className="h-8 max-w-[180px]" />
+                <audio controls src={voiceAudioUrl} className="h-8 max-w-45" />
                 <p className="text-[10px] text-slate-400">{timeLabel}</p>
               </div>
             )}
