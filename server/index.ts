@@ -28,7 +28,6 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_AN
 let waReady = false;
 let currentQR: string | null = null;
 
-
 // Clean up stale Chrome profile lock files (can persist on volume across container restarts)
 const sessionPath = '/app/.wwebjs_auth';
 try {
@@ -153,6 +152,35 @@ app.post('/api/translate', async (req, res) => {
   }
 });
 
+// Grammar/clarity check
+app.post('/api/check-clarity', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text?.trim()) return res.json({ hasIssue: false });
+
+    const completion = await groq.chat.completions.create({
+      model: 'openai/gpt-oss-20b',
+      messages: [
+        {
+          role: 'user',
+          content: `Review this school announcement for grammar, clarity, or awkward phrasing issues that a busy admin might have typed quickly:\n\n"${text}"\n\nIf it's clear and fine as-is, respond with exactly: OK\nIf there's a real issue worth fixing, respond with exactly: ISSUE: <a corrected/clearer version of the same message, keeping the same meaning and tone>`,
+        },
+      ],
+    });
+
+    const result = completion.choices[0].message.content || '';
+    if (result.trim().toUpperCase().startsWith('OK')) {
+      res.json({ hasIssue: false });
+    } else {
+      const suggestion = result.replace(/^ISSUE:\s*/i, '').trim();
+      res.json({ hasIssue: true, suggestion });
+    }
+  } catch (err: any) {
+    console.error('Clarity check error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No audio file provided' });
@@ -264,7 +292,6 @@ app.put('/api/students/:id', async (req, res) => {
   res.json(data[0]);
 });
 
-// Same-day birthday photo upload
 app.post('/api/students/:id/photo', upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No photo provided' });
@@ -283,7 +310,6 @@ app.post('/api/students/:id/photo', upload.single('photo'), async (req, res) => 
   }
 });
 
-// Send today's birthday wish with photo
 app.post('/api/students/:id/send-birthday', async (req, res) => {
   try {
     if (!waReady) {
@@ -378,7 +404,6 @@ app.delete('/api/events/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// Event media upload
 app.post('/api/events/:id/media', upload.array('media', 10), async (req, res) => {
   try {
     const files = req.files as Express.Multer.File[];
@@ -430,6 +455,35 @@ app.post('/api/events/:id/send', async (req, res) => {
     res.json({ success: true });
   } catch (err: any) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Auto-caption for event photos
+app.post('/api/generate-caption', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image provided' });
+
+    const imageData = fs.readFileSync(req.file.path);
+    const base64Image = imageData.toString('base64');
+
+    const completion = await groq.chat.completions.create({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Write a short, warm caption (under 15 words) for this school event photo, suitable for a parent WhatsApp group. Just the caption, nothing else.' },
+            { type: 'image_url', image_url: { url: `data:${req.file.mimetype};base64,${base64Image}` } },
+          ] as any,
+        },
+      ],
+    });
+
+    fs.unlinkSync(req.file.path);
+    res.json({ caption: completion.choices[0].message.content });
+  } catch (err: any) {
+    console.error('Caption generation error:', err);
     res.status(500).json({ error: err.message });
   }
 });

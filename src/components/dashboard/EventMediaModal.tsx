@@ -19,6 +19,7 @@ export default function EventMediaModal({ eventId, eventTitle, onClose }: EventM
   const [files, setFiles] = useState<File[]>([]);
   const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [generatingCaption, setGeneratingCaption] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -32,6 +33,24 @@ export default function EventMediaModal({ eventId, eventTitle, onClose }: EventM
   useEffect(() => {
     fetchMedia();
   }, []);
+
+  const handleFilesSelected = async (selectedFiles: File[]) => {
+    setFiles(selectedFiles);
+    if (!caption.trim() && selectedFiles[0]?.type.startsWith('image')) {
+      setGeneratingCaption(true);
+      try {
+        const capFormData = new FormData();
+        capFormData.append('image', selectedFiles[0]);
+        const capRes = await fetch(`${API_URL}/api/generate-caption`, { method: 'POST', body: capFormData });
+        const capData = await capRes.json();
+        if (capData.caption) setCaption(capData.caption);
+      } catch (err) {
+        console.error('Caption generation failed', err);
+      } finally {
+        setGeneratingCaption(false);
+      }
+    }
+  };
 
   const handleUpload = async () => {
     if (files.length === 0) return;
@@ -87,22 +106,15 @@ export default function EventMediaModal({ eventId, eventTitle, onClose }: EventM
         <h3 className="text-sm font-semibold text-slate-800 mb-4">{eventTitle} — Photos & Videos</h3>
 
         <label className="border border-dashed border-slate-300 rounded-lg p-3 text-center block cursor-pointer hover:bg-slate-50 mb-2">
-          <input
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            className="hidden"
-          />
-          <span className="text-sm text-slate-500">
-            {files.length > 0 ? `${files.length} file(s) selected` : '📷 Add photos/videos'}
-          </span>
+          <input type="file" accept="image/*,video/*" multiple onChange={(e) => handleFilesSelected(Array.from(e.target.files || []))} className="hidden" />
+          <span className="text-sm text-slate-500">{files.length > 0 ? `${files.length} file(s) selected` : '📷 Add photos/videos'}</span>
         </label>
         <input
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
-          placeholder="Caption (optional)"
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          placeholder={generatingCaption ? 'AI is writing a caption...' : 'Caption (optional)'}
+          disabled={generatingCaption}
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50"
         />
         <button
           onClick={handleUpload}
@@ -120,15 +132,9 @@ export default function EventMediaModal({ eventId, eventTitle, onClose }: EventM
                 <button
                   key={m.id}
                   onClick={() => toggleSelect(m.id)}
-                  className={`relative rounded-lg overflow-hidden border-2 ${
-                    selected.has(m.id) ? 'border-emerald-500' : 'border-transparent'
-                  }`}
+                  className={`relative rounded-lg overflow-hidden border-2 ${selected.has(m.id) ? 'border-emerald-500' : 'border-transparent'}`}
                 >
-                  {m.media_type === 'video' ? (
-                    <video src={m.media_url} className="w-full h-20 object-cover" />
-                  ) : (
-                    <img src={m.media_url} className="w-full h-20 object-cover" />
-                  )}
+                  {m.media_type === 'video' ? <video src={m.media_url} className="w-full h-20 object-cover" /> : <img src={m.media_url} className="w-full h-20 object-cover" />}
                   {selected.has(m.id) && (
                     <span className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">✓</span>
                   )}

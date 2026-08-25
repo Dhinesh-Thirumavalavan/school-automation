@@ -11,6 +11,7 @@ export default function ComposeBroadcast() {
   const [voiceAudioUrl, setVoiceAudioUrl] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviewUrls, setMediaPreviewUrls] = useState<string[]>([]);
+  const [clarityIssue, setClarityIssue] = useState<string | null>(null);
 
   const classListOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -29,29 +30,19 @@ export default function ComposeBroadcast() {
   };
 
   const toggleClass = (cls: string) => {
-    setSelectedClasses((prev) =>
-      prev.includes(cls) ? prev.filter((c) => c !== cls) : [...prev, cls]
-    );
+    setSelectedClasses((prev) => (prev.includes(cls) ? prev.filter((c) => c !== cls) : [...prev, cls]));
   };
 
   const getRecipientPhones = async (): Promise<string[]> => {
     const studentsRes = await fetch(`${API_URL}/api/students`);
     const students = await studentsRes.json();
 
-    if (audienceMode === 'all') {
-      return students.map((s: any) => s.parent_phone);
-    }
-    if (audienceMode === 'class') {
-      return students
-        .filter((s: any) => selectedClasses.includes(s.class))
-        .map((s: any) => s.parent_phone);
-    }
+    if (audienceMode === 'all') return students.map((s: any) => s.parent_phone);
+    if (audienceMode === 'class') return students.filter((s: any) => selectedClasses.includes(s.class)).map((s: any) => s.parent_phone);
     if (audienceMode === 'unpaid') {
       const feesRes = await fetch(`${API_URL}/api/fees`);
       const fees = await feesRes.json();
-      const unpaidPhones = fees
-        .filter((f: any) => f.status !== 'paid')
-        .map((f: any) => f.students.parent_phone);
+      const unpaidPhones = fees.filter((f: any) => f.status !== 'paid').map((f: any) => f.students.parent_phone);
       return [...new Set(unpaidPhones)] as string[];
     }
     return [];
@@ -68,14 +59,29 @@ export default function ComposeBroadcast() {
     if (!englishText.trim()) return;
     setLoading(true);
     setSent(false);
+    setClarityIssue(null);
+
     try {
-      const res = await fetch(`${API_URL}/api/translate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: englishText }),
-      });
-      const data = await res.json();
-      setTamilText(data.tamilText || 'Translation failed');
+      const [translateRes, clarityRes] = await Promise.all([
+        fetch(`${API_URL}/api/translate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: englishText }),
+        }),
+        fetch(`${API_URL}/api/check-clarity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: englishText }),
+        }),
+      ]);
+
+      const translateData = await translateRes.json();
+      setTamilText(translateData.tamilText || 'Translation failed');
+
+      const clarityData = await clarityRes.json();
+      if (clarityData.hasIssue) {
+        setClarityIssue(clarityData.suggestion);
+      }
     } catch (err) {
       setTamilText('Error connecting to translation server');
     } finally {
@@ -153,11 +159,7 @@ export default function ComposeBroadcast() {
           <p className="text-sm font-medium text-slate-600 mb-2">Quick templates</p>
           <div className="flex flex-wrap gap-2">
             {quickTemplates.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => setEnglishText(t)}
-                className="text-xs px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100"
-              >
+              <button key={i} onClick={() => setEnglishText(t)} className="text-xs px-3 py-1.5 rounded-full border border-slate-300 text-slate-600 hover:bg-slate-100">
                 {t.length > 40 ? t.slice(0, 40) + '...' : t}
               </button>
             ))}
@@ -177,17 +179,9 @@ export default function ComposeBroadcast() {
         <div className="mb-4">
           <p className="text-sm font-medium text-slate-600 mb-2">Or attach photo(s)/video(s)</p>
           <label className="border border-dashed border-slate-300 rounded-lg p-4 text-center block cursor-pointer hover:bg-slate-50">
-            <input
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              onChange={handleMediaSelect}
-              className="hidden"
-            />
+            <input type="file" accept="image/*,video/*" multiple onChange={handleMediaSelect} className="hidden" />
             {mediaFiles.length > 0 ? (
-              <span className="text-sm text-emerald-600 font-medium">
-                ✅ {mediaFiles.length} file{mediaFiles.length > 1 ? 's' : ''} selected
-              </span>
+              <span className="text-sm text-emerald-600 font-medium">✅ {mediaFiles.length} file{mediaFiles.length > 1 ? 's' : ''} selected</span>
             ) : (
               <span className="text-sm text-slate-500">📷 Click to attach photo(s) or video(s)</span>
             )}
@@ -203,9 +197,7 @@ export default function ComposeBroadcast() {
                 type="button"
                 onClick={() => setAudienceMode(mode)}
                 className={`text-xs px-3 py-1.5 rounded-full border ${
-                  audienceMode === mode
-                    ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                  audienceMode === mode ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {mode === 'all' ? 'All Parents' : mode === 'class' ? 'Specific Class(es)' : 'Unpaid Fees'}
@@ -221,9 +213,7 @@ export default function ComposeBroadcast() {
                   type="button"
                   onClick={() => toggleClass(c)}
                   className={`text-xs px-2.5 py-1 rounded-md border ${
-                    selectedClasses.includes(c)
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                    selectedClasses.includes(c) ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {c}
@@ -233,18 +223,11 @@ export default function ComposeBroadcast() {
           )}
         </div>
 
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Announcement (English)
-        </label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Announcement (English)</label>
 
         <div className="flex gap-1.5 mb-2">
           {quickEmojis.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => insertEmoji(e)}
-              className="text-lg hover:scale-110 transition-transform"
-            >
+            <button key={e} type="button" onClick={() => insertEmoji(e)} className="text-lg hover:scale-110 transition-transform">
               {e}
             </button>
           ))}
@@ -258,6 +241,27 @@ export default function ComposeBroadcast() {
           placeholder="Type your announcement here..."
         />
 
+        {clarityIssue && (
+          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs font-medium text-amber-800 mb-1">💡 Suggestion for clarity:</p>
+            <p className="text-sm text-amber-900 mb-2">{clarityIssue}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEnglishText(clarityIssue);
+                  setClarityIssue(null);
+                }}
+                className="text-xs bg-amber-600 text-white px-2.5 py-1 rounded hover:bg-amber-700"
+              >
+                Use this instead
+              </button>
+              <button onClick={() => setClarityIssue(null)} className="text-xs text-amber-700 hover:underline">
+                Keep my version
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleTranslate}
           disabled={loading || !englishText.trim()}
@@ -267,42 +271,25 @@ export default function ComposeBroadcast() {
         </button>
 
         {englishText && mediaFiles.length === 0 && (
-          <button
-            onClick={handleSend}
-            disabled={sending}
-            className="mt-3 ml-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50"
-          >
+          <button onClick={handleSend} disabled={sending} className="mt-3 ml-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
             {sending ? 'Sending...' : 'Send to Parent Group'}
           </button>
         )}
 
         {mediaFiles.length > 0 && (
-          <button
-            onClick={handleSendMedia}
-            disabled={sending}
-            className="mt-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50"
-          >
+          <button onClick={handleSendMedia} disabled={sending} className="mt-3 bg-slate-900 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
             {sending ? 'Sending...' : `Send ${mediaFiles.length} File${mediaFiles.length > 1 ? 's' : ''} to Parent Group`}
           </button>
         )}
 
-        {sent && (
-          <p className="mt-3 text-sm text-emerald-600 font-medium">
-            ✅ Message sent to {getAudienceLabel()}
-          </p>
-        )}
+        {sent && <p className="mt-3 text-sm text-emerald-600 font-medium">✅ Message sent to {getAudienceLabel()}</p>}
       </div>
 
       <div>
         <p className="text-sm font-medium text-slate-600 mb-2">Parent Preview (WhatsApp)</p>
         <div
-          className="rounded-xl p-4 min-h-[280px]"
-          style={{
-            backgroundColor: '#e5ddd5',
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)',
-            backgroundSize: '16px 16px',
-          }}
+          className="rounded-xl p-4 min-h-70"
+          style={{ backgroundColor: '#e5ddd5', backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)', backgroundSize: '16px 16px' }}
         >
           {mediaPreviewUrls.length > 0 && (
             <div className="bg-white rounded-lg rounded-tl-none px-2 py-2 mb-2 max-w-[85%] shadow-sm">
@@ -316,9 +303,7 @@ export default function ComposeBroadcast() {
                   );
                 })}
               </div>
-              {mediaPreviewUrls.length > 4 && (
-                <p className="text-xs text-slate-400 mt-1">+{mediaPreviewUrls.length - 4} more</p>
-              )}
+              {mediaPreviewUrls.length > 4 && <p className="text-xs text-slate-400 mt-1">+{mediaPreviewUrls.length - 4} more</p>}
               {englishText && <p className="text-sm text-slate-800 mt-1">{englishText}</p>}
             </div>
           )}
@@ -326,7 +311,7 @@ export default function ComposeBroadcast() {
           {voiceAudioUrl && (
             <div className="bg-white rounded-lg rounded-tl-none px-3 py-2 mb-2 max-w-[85%] shadow-sm flex items-center gap-2">
               <span className="text-emerald-600 text-lg">▶️</span>
-              <audio controls src={voiceAudioUrl} className="h-8 max-w-[180px]" />
+              <audio controls src={voiceAudioUrl} className="h-8 max-w-45" />
               <p className="text-[10px] text-slate-400">{timeLabel}</p>
             </div>
           )}
@@ -345,11 +330,7 @@ export default function ComposeBroadcast() {
             </div>
           )}
 
-          {!englishText && mediaFiles.length === 0 && (
-            <p className="text-xs text-slate-500 text-center mt-20">
-              Your message will preview here as you type
-            </p>
-          )}
+          {!englishText && mediaFiles.length === 0 && <p className="text-xs text-slate-500 text-center mt-20">Your message will preview here as you type</p>}
         </div>
       </div>
     </div>
