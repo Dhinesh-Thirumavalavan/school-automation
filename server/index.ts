@@ -28,6 +28,29 @@ const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_AN
 let waReady = false;
 let currentQR: string | null = null;
 
+
+// Clean up stale Chrome profile lock files (can persist on volume across container restarts)
+const sessionPath = '/app/.wwebjs_auth';
+try {
+  const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+  const findAndRemoveLocks = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) {
+        findAndRemoveLocks(fullPath);
+      } else if (lockFiles.includes(entry.name)) {
+        fs.unlinkSync(fullPath);
+        console.log(`Removed stale lock file: ${fullPath}`);
+      }
+    }
+  };
+  findAndRemoveLocks(sessionPath);
+} catch (err) {
+  console.log('Lock cleanup skipped (non-fatal):', err);
+}
+
 const waClient = new Client({
   authStrategy: new LocalAuth({
     dataPath: '/app/.wwebjs_auth',
