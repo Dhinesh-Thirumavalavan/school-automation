@@ -5,6 +5,7 @@ import AnalyticsSummary from './AnalyticsSummary';
 import BirthdayAutomation from '../students/BirthdayAutomation';
 import UpcomingEvents from './UpcomingEvents';
 import NotableDaysTicker from './NotableDaysTicker';
+import AttendanceSummary from './AttendanceSummary';
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -32,6 +33,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BirthdayAutomation students={students} />
         <UpcomingEvents />
+        <AttendanceSummary />
       </div>
     </div>
   );

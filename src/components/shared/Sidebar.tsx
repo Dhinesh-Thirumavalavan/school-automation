@@ -1,3 +1,5 @@
+import { getCurrentAcademicYear } from '../../utils/academicYear';
+
 type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings';
 
 interface SidebarProps {
@@ -25,7 +27,8 @@ export default function Sidebar({ active, onNavigate, isAdmin }: SidebarProps) {
   return (
     <>
       <aside className="hidden md:flex w-64 h-screen bg-slate-900 text-slate-100 flex-col p-4">
-        <div className="text-xl font-semibold mb-8 px-2">E.A.S. Academy</div>
+        <div className="text-xl font-semibold mb-1 px-2">E.A.S. Academy</div>
+        <div className="text-xs text-slate-400 mb-8 px-2">AY {getCurrentAcademicYear()}</div>
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => (
             <button

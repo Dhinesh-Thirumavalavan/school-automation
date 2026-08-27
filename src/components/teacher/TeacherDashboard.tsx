@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../config';
+import TeacherCompose from './TeacherCompose';
 
 interface Student {
   id: string;
@@ -27,6 +28,7 @@ interface TeacherDashboardProps {
 
 export default function TeacherDashboard({ assignedClasses }: TeacherDashboardProps) {
   const [activeClass, setActiveClass] = useState(assignedClasses[0] || '');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'homework' | 'compose'>('attendance');
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [marking, setMarking] = useState<string | null>(null);
@@ -94,9 +96,12 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
   };
 
   const markedCount = students.filter((s) => attendance[s.id]).length;
+  const presentCount = students.filter((s) => attendance[s.id] === 'present').length;
+  const absentCount = students.filter((s) => attendance[s.id] === 'absent').length;
+  const unmarkedCount = students.length - markedCount;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-4">
       {assignedClasses.length > 1 && (
         <div className="flex gap-2">
           {assignedClasses.map((c) => (
@@ -113,93 +118,133 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
         </div>
       )}
 
-      {/* Attendance section */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-800 mb-3">
-          Today's Attendance — {activeClass} <span className="text-slate-400 font-normal">({markedCount}/{students.length} marked)</span>
-        </h3>
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500 text-left">
-              <tr>
-                <th className="px-4 py-2 font-medium">Name</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {students.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-4 py-2 font-medium text-slate-800">{s.name}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => markStudent(s.id, 'present')}
-                        disabled={marking === s.id}
-                        className={`text-xs px-3 py-1 rounded-full border ${
-                          attendance[s.id] === 'present' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Present
-                      </button>
-                      <button
-                        onClick={() => markStudent(s.id, 'absent')}
-                        disabled={marking === s.id}
-                        className={`text-xs px-3 py-1 rounded-full border ${
-                          attendance[s.id] === 'absent' ? 'bg-red-600 text-white border-red-600' : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        Absent
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {students.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="px-4 py-6 text-center text-slate-400">
-                    No students found for {activeClass}.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Homework section */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-800 mb-3">Post Homework — {activeClass}</h3>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <textarea
-            value={homeworkText}
-            onChange={(e) => setHomeworkText(e.target.value)}
-            rows={3}
-            placeholder="Type today's homework..."
-            className="w-full border border-slate-300 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
+      <div className="flex gap-2 border-b border-slate-200 pb-2">
+        {(['attendance', 'homework', 'compose'] as const).map((tab) => (
           <button
-            onClick={postHomework}
-            disabled={postingHomework || !homeworkText.trim()}
-            className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`text-sm px-3 py-1.5 rounded-t-lg ${
+              activeTab === tab ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            {postingHomework ? 'Translating & Sending...' : 'Post Homework to Parents'}
+            {tab === 'attendance' ? '📋 Attendance' : tab === 'homework' ? '📚 Homework' : '📢 Compose'}
           </button>
-          {homeworkPosted && <p className="text-sm text-emerald-600 font-medium mt-2">✅ Homework sent to {activeClass} parents</p>}
-        </div>
-
-        {homeworkHistory.length > 0 && (
-          <div className="mt-4 space-y-2">
-            <p className="text-xs font-medium text-slate-500">Recent homework</p>
-            {homeworkHistory.map((h) => (
-              <div key={h.id} className="bg-slate-50 rounded-lg p-3">
-                <p className="text-sm text-slate-800">{h.english_text}</p>
-                <p className="text-xs text-slate-500 mt-1">{h.tamil_text}</p>
-                <p className="text-[10px] text-slate-400 mt-1">{new Date(h.posted_at).toLocaleString('en-IN')}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        ))}
       </div>
+
+      {activeTab === 'attendance' && (
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800 mb-3">Today's Attendance — {activeClass}</h3>
+
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-emerald-700">{presentCount}</p>
+              <p className="text-[10px] text-emerald-600 font-medium">Present</p>
+            </div>
+            <div className="bg-red-50 border border-red-100 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-red-700">{absentCount}</p>
+              <p className="text-[10px] text-red-600 font-medium">Absent</p>
+            </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-center">
+              <p className="text-xl font-bold text-slate-600">{unmarkedCount}</p>
+              <p className="text-[10px] text-slate-500 font-medium">Not marked</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500 mb-2">
+            {markedCount} of {students.length} students marked
+          </p>
+
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500 text-left">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Name</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {students.map((s) => (
+                  <tr key={s.id}>
+                    <td className="px-4 py-2 font-medium text-slate-800">{s.name}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => markStudent(s.id, 'present')}
+                          disabled={marking === s.id}
+                          className={`text-xs px-3 py-1 rounded-full border ${
+                            attendance[s.id] === 'present'
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          Present
+                        </button>
+                        <button
+                          onClick={() => markStudent(s.id, 'absent')}
+                          disabled={marking === s.id}
+                          className={`text-xs px-3 py-1 rounded-full border ${
+                            attendance[s.id] === 'absent'
+                              ? 'bg-red-600 text-white border-red-600'
+                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          Absent
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {students.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="px-4 py-6 text-center text-slate-400">
+                      No students found for {activeClass}.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'homework' && (
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800 mb-3">Post Homework — {activeClass}</h3>
+          <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <textarea
+              value={homeworkText}
+              onChange={(e) => setHomeworkText(e.target.value)}
+              rows={3}
+              placeholder="Type today's homework..."
+              className="w-full border border-slate-300 rounded-lg p-3 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <button
+              onClick={postHomework}
+              disabled={postingHomework || !homeworkText.trim()}
+              className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {postingHomework ? 'Translating & Sending...' : 'Post Homework to Parents'}
+            </button>
+            {homeworkPosted && <p className="text-sm text-emerald-600 font-medium mt-2">✅ Homework sent to {activeClass} parents</p>}
+          </div>
+
+          {homeworkHistory.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-slate-500">Recent homework</p>
+              {homeworkHistory.map((h) => (
+                <div key={h.id} className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-sm text-slate-800">{h.english_text}</p>
+                  <p className="text-xs text-slate-500 mt-1">{h.tamil_text}</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{new Date(h.posted_at).toLocaleString('en-IN')}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'compose' && <TeacherCompose activeClass={activeClass} />}
     </div>
   );
 }
