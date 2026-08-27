@@ -10,6 +10,7 @@ interface MessageHistoryItem {
   total_recipients: number;
   delivered: number;
   read: number;
+  failed_recipients?: string[];
 }
 
 export default function MessageHistory() {
@@ -52,13 +53,18 @@ export default function MessageHistory() {
                   {new Date(m.sent_at).toLocaleString('en-IN')}
                 </span>
               </div>
-              <p className="text-sm text-slate-800 mb-1 wrap-break-word">{m.english_text}</p>
-              <p className="text-sm text-slate-500">{m.tamil_text}</p>
+              <p className="text-sm text-slate-800 mb-1 break-words">{m.english_text}</p>
+              <p className="text-sm text-slate-500 break-words">{m.tamil_text}</p>
               <div className="flex items-center gap-4 pt-3 mt-2 border-t border-slate-100">
                 <span className="text-xs text-slate-600">
                   Sent to: <span className="font-medium">{m.total_recipients}</span>
                 </span>
               </div>
+              {m.failed_recipients && m.failed_recipients.length > 0 && (
+                <p className="text-xs text-red-500 mt-1">
+                  ⚠️ {m.failed_recipients.length} recipient(s) not reached (invalid number)
+                </p>
+              )}
             </div>
           ))}
           {filtered.length === 0 && (

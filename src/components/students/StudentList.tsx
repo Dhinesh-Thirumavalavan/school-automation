@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Student } from '../../types';
+import { Student } from '../../types';
 import BirthdayAutomation from './BirthdayAutomation';
 import StudentFormModal from './StudentFormModal';
 import BulkImportModal from './BulkImportModal';
@@ -13,6 +13,10 @@ function isBirthdaySoon(birthday: string): boolean {
   const bday = new Date(today.getFullYear(), month - 1, day);
   const diff = Math.ceil((bday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   return diff >= 0 && diff <= 7;
+}
+
+function hasValidPhone(phone?: string): boolean {
+  return !!phone && phone.trim().length >= 10;
 }
 
 export default function StudentList() {
@@ -127,9 +131,11 @@ export default function StudentList() {
     }))
     .filter((g) => g.students.length > 0);
 
+  const missingPhoneCount = students.filter((s) => !hasValidPhone(s.parentPhone)).length;
+
   const renderTable = (list: Student[]) => (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm min-w-125">
+      <table className="w-full text-sm min-w-[500px]">
         <thead className="bg-slate-50 text-slate-500 text-left">
           <tr>
             <th className="px-4 py-2 font-medium">Name</th>
@@ -148,7 +154,13 @@ export default function StudentList() {
               </td>
               <td className="px-4 py-2 text-slate-600">{s.section || '—'}</td>
               <td className="px-4 py-2 text-slate-600">{s.rollNo || '—'}</td>
-              <td className="px-4 py-2 text-slate-600">{s.parentPhone}</td>
+              <td className="px-4 py-2 text-slate-600">
+                {hasValidPhone(s.parentPhone) ? (
+                  s.parentPhone
+                ) : (
+                  <span className="text-red-500 text-xs font-medium">⚠️ Missing/Invalid</span>
+                )}
+              </td>
               <td className="px-4 py-2 text-slate-600">{s.birthday}</td>
               <td className="px-4 py-2 whitespace-nowrap">
                 <button
@@ -195,6 +207,15 @@ export default function StudentList() {
             </button>
           </div>
         </div>
+
+        {missingPhoneCount > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mb-3 flex items-center gap-2">
+            <span className="text-amber-600">⚠️</span>
+            <p className="text-sm text-amber-800">
+              {missingPhoneCount} student{missingPhoneCount > 1 ? 's are' : ' is'} missing a valid parent phone number — they won't receive automated messages.
+            </p>
+          </div>
+        )}
 
         <input
           value={search}
