@@ -29,9 +29,9 @@ function App() {
   const isAdmin = user.role === 'admin';
 
   return (
-    <div className="flex">
-      <Sidebar active={screen} onNavigate={setScreen} isAdmin={isAdmin} />
-      <div className="flex-1">
+<div className="flex min-w-0">
+  <Sidebar active={screen} onNavigate={setScreen} isAdmin={isAdmin} />
+  <div className="flex-1 min-w-0">
        <Header title={screen.charAt(0).toUpperCase() + screen.slice(1)} userName={user.name} onLogout={handleLogout} />
         <main className="p-4 md:p-6 pb-20 md:pb-6">
   {isAdmin ? (
