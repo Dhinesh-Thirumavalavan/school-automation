@@ -66,17 +66,34 @@ router.post('/:id/send-birthday', async (req, res) => {
     if (!waReady) return res.status(503).json({ error: 'WhatsApp not ready yet, please try again in a few seconds' });
     const { data: student } = await supabase.from('students').select('*').eq('id', req.params.id).single();
     if (!student) return res.status(404).json({ error: 'Student not found' });
-    const english = `Today's birthday: ${student.name}! God bless you, have a fantastic year ahead.`;
+
+    const english = `🎉 Today's Birthday: ${student.name}! God bless you dear, have a fantastic year ahead. 🎂`;
     const tamil = await translateText(english);
     const fullMessage = `${english}\n\n${tamil}`;
-    const cleanPhone = student.parent_phone.replace(/[^0-9]/g, '');
-    const numberId = await waClient.getNumberId(cleanPhone);
-    if (numberId) {
-      if (student.photo_url) await waClient.sendMessage(numberId._serialized, await MessageMedia.fromUrl(student.photo_url), { caption: fullMessage });
-      else await waClient.sendMessage(numberId._serialized, fullMessage);
-    } else return res.status(400).json({ error: 'Invalid WhatsApp number' });
-    await logMessage(english, tamil, `Birthday — ${student.name}`, 1);
-    res.json({ success: true });
+
+    // Send to all parents in the same class, not just this student's own parent
+    const { data: classmates } = await supabase.from('students').select('parent_phone').eq('class', student.class);
+    const phones = (classmates || []).map((s: any) => s.parent_phone);
+
+    let mediaToSend = null;
+    if (student.photo_url) {
+      mediaToSend = await MessageMedia.fromUrl(student.photo_url);
+    }
+
+    for (const phone of phones) {
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const numberId = await waClient.getNumberId(cleanPhone);
+      if (numberId) {
+        if (mediaToSend) {
+          await waClient.sendMessage(numberId._serialized, mediaToSend, { caption: fullMessage });
+        } else {
+          await waClient.sendMessage(numberId._serialized, fullMessage);
+        }
+      }
+    }
+
+    await logMessage(english, tamil, `Birthday — ${student.name} (Class ${student.class})`, phones.length);
+    res.json({ success: true, sentTo: phones.length });
   } catch (err: any) {
     console.error('send-birthday error:', err);
     res.status(500).json({ error: err.message });
