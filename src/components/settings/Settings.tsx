@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ManageTeachers from './ManageTeachers';
 
 export default function Settings() {
   const [schoolName, setSchoolName] = useState('E.A.S. Academy');
@@ -44,6 +45,9 @@ export default function Settings() {
         </button>
         {saved && <p className="text-sm text-emerald-600 font-medium">✅ Settings saved</p>}
       </form>
+      <div className="mt-8">
+  <ManageTeachers />
+</div>
     </div>
   );
 }

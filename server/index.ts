@@ -646,3 +646,82 @@ app.get('/api/teachers', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
+
+
+// --- Attendance (already defined earlier, included here for completeness) ---
+app.get('/api/attendance', async (req, res) => {
+  const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+  const classFilter = req.query.class as string | undefined;
+
+  let query = supabase.from('attendance').select('*, students(name, class, parent_phone)').eq('date', date);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+
+  const filtered = classFilter ? data.filter((a: any) => a.students.class === classFilter) : data;
+  res.json(filtered);
+});
+
+app.post('/api/attendance/mark', async (req, res) => {
+  try {
+    const { student_id, status, date } = req.body;
+    const attendanceDate = date || new Date().toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('attendance')
+      .upsert([{ student_id, date: attendanceDate, status }], { onConflict: 'student_id,date' })
+      .select();
+    if (error) throw error;
+
+    if (status === 'absent') {
+      const { data: student } = await supabase.from('students').select('*').eq('id', student_id).single();
+      if (student) {
+        const english = `Your child ${student.name} was marked absent today. Please confirm or inform the school if this is a mistake.`;
+        const tamil = await translateText(english);
+        await sendToPhone(student.parent_phone, `${english}\n\n${tamil}`);
+        await logMessage(english, tamil, `Absence Alert — ${student.name}`, 1);
+      }
+    }
+
+    res.json(data[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Homework ---
+app.get('/api/homework', async (req, res) => {
+  const classFilter = req.query.class as string | undefined;
+  let query = supabase.from('homework').select('*').order('posted_at', { ascending: false }).limit(20);
+  if (classFilter) query = query.eq('class', classFilter);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/homework', async (req, res) => {
+  try {
+    const { class: studentClass, english_text, posted_by } = req.body;
+    const tamil_text = await translateText(english_text);
+
+    const { data: homeworkRow, error } = await supabase
+      .from('homework')
+      .insert([{ class: studentClass, english_text, tamil_text, posted_by }])
+      .select();
+    if (error) throw error;
+
+    const { data: students } = await supabase.from('students').select('parent_phone').eq('class', studentClass);
+    const phones = (students || []).map((s: any) => s.parent_phone);
+
+    const message = `📚 Homework — ${studentClass}\n\n${english_text}\n\n${tamil_text}`;
+    for (const phone of phones) {
+      await sendToPhone(phone, message);
+    }
+    await logMessage(`Homework — ${studentClass}`, '', `Homework — ${studentClass}`, phones.length);
+
+    res.json(homeworkRow[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
