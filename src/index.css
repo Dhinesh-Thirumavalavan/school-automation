@@ -7,3 +7,8 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+html, body, #root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}

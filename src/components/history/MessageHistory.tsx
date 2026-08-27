@@ -52,7 +52,7 @@ export default function MessageHistory() {
                   {new Date(m.sent_at).toLocaleString('en-IN')}
                 </span>
               </div>
-              <p className="text-sm text-slate-800 mb-1">{m.english_text}</p>
+              <p className="text-sm text-slate-800 mb-1 wrap-break-word">{m.english_text}</p>
               <p className="text-sm text-slate-500">{m.tamil_text}</p>
               <div className="flex items-center gap-4 pt-3 mt-2 border-t border-slate-100">
                 <span className="text-xs text-slate-600">

@@ -40,7 +40,7 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
         .then((res) => res.json())
         .then(setResults)
         .catch((err) => console.error(err));
-    }, 250); // debounce so it doesn't fire on every keystroke
+    }, 250);
     return () => clearTimeout(timeout);
   }, [query]);
 
@@ -79,8 +79,13 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
 
   if (receipt) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl p-6 w-full max-w-sm text-center">
+          <div className="flex justify-end mb-1">
+            <button onClick={onSaved} className="text-slate-400 hover:text-slate-700 text-xl leading-none">
+              ✕
+            </button>
+          </div>
           <div className="text-4xl mb-2">✅</div>
           <h3 className="text-sm font-semibold text-slate-800 mb-1">Payment Recorded</h3>
           <p className="text-xs text-slate-500 mb-4">Receipt generated successfully</p>
@@ -102,9 +107,14 @@ export default function RecordPaymentModal({ onSaved, onClose }: RecordPaymentMo
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl p-6 w-full max-w-md">
-        <h3 className="text-sm font-semibold text-slate-800 mb-4">Record Payment</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-slate-800">Record Payment</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl leading-none">
+            ✕
+          </button>
+        </div>
 
         <label className="block text-sm font-medium text-slate-700 mb-1">Search Student</label>
         <div className="relative mb-4">
