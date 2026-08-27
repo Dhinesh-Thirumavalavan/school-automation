@@ -1,16 +1,43 @@
 import { useState } from 'react';
+import { API_URL } from '../../config';
+
+export interface AuthUser {
+  role: 'admin' | 'teacher';
+  name: string;
+  assignedClasses: string[];
+}
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: AuthUser) => void;
 }
 
 export default function Login({ onLogin }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(); // mock auth — accepts anything for the demo
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onLogin(data);
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Could not connect to server');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,10 +51,7 @@ export default function Login({ onLogin }: LoginProps) {
           <p className="text-sm text-slate-500 mt-1">Parent Communication Dashboard</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white border border-slate-200 rounded-xl p-6 space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
             <input
@@ -50,11 +74,15 @@ export default function Login({ onLogin }: LoginProps) {
               required
             />
           </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
           <button
             type="submit"
-            className="w-full bg-emerald-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-emerald-700"
+            disabled={loading}
+            className="w-full bg-emerald-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
           >
-            Sign In
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './components/shared/Sidebar';
 import Header from './components/shared/Header';
-import Login from './components/auth/Login';
+import Login, { AuthUser } from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
 import ComposeBroadcast from './components/compose/ComposeBroadcast';
 import FeeTracker from './components/fees/FeeTracker';
@@ -13,30 +13,32 @@ import SystemStatus from './components/shared/SystemStatus';
 type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings';
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [screen, setScreen] = useState<Screen>('dashboard');
 
-  if (!loggedIn) {
-    return <Login onLogin={() => setLoggedIn(true)} />;
+  if (!user) {
+    return <Login onLogin={setUser} />;
   }
 
+  const isAdmin = user.role === 'admin';
+
   return (
-  <div className="flex">
-    <Sidebar active={screen} onNavigate={setScreen} />
-    <div className="flex-1">
-      <Header title={screen.charAt(0).toUpperCase() + screen.slice(1)} />
-      <main className="p-4 md:p-6 pb-20 md:pb-6">
-        {screen === 'dashboard' && <Dashboard />}
-        {screen === 'compose' && <ComposeBroadcast />}
-        {screen === 'fees' && <FeeTracker />}
-        {screen === 'students' && <StudentList />}
-        {screen === 'history' && <MessageHistory />}
-        {screen === 'settings' && <Settings />}
-      </main>
+    <div className="flex">
+      <Sidebar active={screen} onNavigate={setScreen} isAdmin={isAdmin} />
+      <div className="flex-1">
+        <Header title={screen.charAt(0).toUpperCase() + screen.slice(1)} />
+        <main className="p-4 md:p-6 pb-20 md:pb-6">
+          {screen === 'dashboard' && <Dashboard />}
+          {screen === 'compose' && isAdmin && <ComposeBroadcast />}
+          {screen === 'fees' && isAdmin && <FeeTracker />}
+          {screen === 'students' && isAdmin && <StudentList />}
+          {screen === 'history' && isAdmin && <MessageHistory />}
+          {screen === 'settings' && isAdmin && <Settings />}
+        </main>
+      </div>
+      {isAdmin && <SystemStatus />}
     </div>
-    <SystemStatus />
-  </div>
-);
+  );
 }
 
 export default App;

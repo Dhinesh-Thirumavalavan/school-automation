@@ -3,9 +3,10 @@ type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'setti
 interface SidebarProps {
   active: Screen;
   onNavigate: (screen: Screen) => void;
+  isAdmin: boolean;
 }
 
-const navItems: { key: Screen; label: string; icon: string }[] = [
+const adminNavItems: { key: Screen; label: string; icon: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'compose', label: 'Compose', icon: '📢' },
   { key: 'history', label: 'History', icon: '🕓' },
@@ -14,7 +15,13 @@ const navItems: { key: Screen; label: string; icon: string }[] = [
   { key: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 
-export default function Sidebar({ active, onNavigate }: SidebarProps) {
+const teacherNavItems: { key: Screen; label: string; icon: string }[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: '📊' },
+];
+
+export default function Sidebar({ active, onNavigate, isAdmin }: SidebarProps) {
+  const navItems = isAdmin ? adminNavItems : teacherNavItems;
+
   return (
     <>
       <aside className="hidden md:flex w-64 h-screen bg-slate-900 text-slate-100 flex-col p-4">

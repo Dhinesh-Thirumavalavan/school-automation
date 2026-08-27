@@ -9,12 +9,15 @@ import qrcode from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import { createClient } from '@supabase/supabase-js';
 import cron from 'node-cron';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
 
 const upload = multer({
   dest: 'uploads/',
@@ -593,4 +596,53 @@ app.get('/api/system-status', async (req, res) => {
       error: 'Status check failed',
     });
   }
+});
+
+
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (email === ADMIN_EMAIL) {
+      const valid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+      if (valid) {
+        return res.json({ role: 'admin', name: 'Admin', assignedClasses: [] });
+      }
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const { data: teacher } = await supabase.from('teachers').select('*').eq('email', email).maybeSingle();
+    if (!teacher) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const valid = await bcrypt.compare(password, teacher.password_hash);
+    if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+    res.json({ role: 'teacher', name: teacher.name, assignedClasses: teacher.assigned_classes });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/teachers', async (req, res) => {
+  try {
+    const { name, email, password, assigned_classes } = req.body;
+    const password_hash = await bcrypt.hash(password, 10);
+    const { data, error } = await supabase
+      .from('teachers')
+      .insert([{ name, email, password_hash, assigned_classes }])
+      .select('id, name, email, assigned_classes');
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/teachers', async (req, res) => {
+  const { data, error } = await supabase.from('teachers').select('id, name, email, assigned_classes');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
