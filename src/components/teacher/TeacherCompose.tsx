@@ -12,7 +12,6 @@ export default function TeacherCompose({ activeClass }: TeacherComposeProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [mediaPreviewUrls, setMediaPreviewUrls] = useState<string[]>([]);
 
   const handleTranslate = async () => {
     if (!englishText.trim()) return;
@@ -74,7 +73,6 @@ export default function TeacherCompose({ activeClass }: TeacherComposeProps) {
       return;
     }
     setMediaFiles(files);
-    setMediaPreviewUrls(files.map((f) => URL.createObjectURL(f)));
   };
 
   const handleSendMedia = async () => {
@@ -93,7 +91,6 @@ export default function TeacherCompose({ activeClass }: TeacherComposeProps) {
       if (data.success) {
         setSent(true);
         setMediaFiles([]);
-        setMediaPreviewUrls([]);
         setEnglishText('');
         setTimeout(() => setSent(false), 3000);
       }
