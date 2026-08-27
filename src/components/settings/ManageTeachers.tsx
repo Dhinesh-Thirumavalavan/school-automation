@@ -18,6 +18,7 @@ export default function ManageTeachers() {
   const [password, setPassword] = useState('');
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [resettingId, setResettingId] = useState<string | null>(null);
 
   const fetchTeachers = async () => {
     const res = await fetch(`${API_URL}/api/teachers`);
@@ -52,6 +53,30 @@ export default function ManageTeachers() {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResetPassword = async (teacherId: string, teacherName: string) => {
+    const newPassword = prompt(`Enter a new password for ${teacherName}:`);
+    if (!newPassword) return;
+    setResettingId(teacherId);
+    try {
+      const res = await fetch(`${API_URL}/api/teachers/${teacherId}/reset-password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_password: newPassword }),
+      });
+      if (res.ok) {
+        alert(`Password reset for ${teacherName}`);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to reset password');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to reset password');
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -126,6 +151,7 @@ export default function ManageTeachers() {
               <th className="px-4 py-2 font-medium">Name</th>
               <th className="px-4 py-2 font-medium">Email</th>
               <th className="px-4 py-2 font-medium">Classes</th>
+              <th className="px-4 py-2 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -134,11 +160,20 @@ export default function ManageTeachers() {
                 <td className="px-4 py-2 font-medium text-slate-800">{t.name}</td>
                 <td className="px-4 py-2 text-slate-600">{t.email}</td>
                 <td className="px-4 py-2 text-slate-600">{t.assigned_classes.join(', ')}</td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => handleResetPassword(t.id, t.name)}
+                    disabled={resettingId === t.id}
+                    className="text-xs text-emerald-700 hover:underline disabled:opacity-50"
+                  >
+                    {resettingId === t.id ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </td>
               </tr>
             ))}
             {teachers.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
                   No teacher accounts yet.
                 </td>
               </tr>

@@ -17,6 +17,11 @@ function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [screen, setScreen] = useState<Screen>('dashboard');
 
+  const handleLogout = () => {
+  setUser(null);
+  setScreen('dashboard');
+};
+
   if (!user) {
     return <Login onLogin={setUser} />;
   }
@@ -27,7 +32,7 @@ function App() {
     <div className="flex">
       <Sidebar active={screen} onNavigate={setScreen} isAdmin={isAdmin} />
       <div className="flex-1">
-        <Header title={screen.charAt(0).toUpperCase() + screen.slice(1)} />
+       <Header title={screen.charAt(0).toUpperCase() + screen.slice(1)} userName={user.name} onLogout={handleLogout} />
         <main className="p-4 md:p-6 pb-20 md:pb-6">
   {isAdmin ? (
     <>

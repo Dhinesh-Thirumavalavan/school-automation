@@ -3,6 +3,7 @@ import type { Student } from '../../types';
 import { API_URL } from '../../config';
 import BirthdayAutomation from './BirthdayAutomation';
 import StudentFormModal from './StudentFormModal';
+import BulkImportModal from './BulkImportModal';
 
 const classOrder = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
 
@@ -20,6 +21,7 @@ export default function StudentList() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Student | undefined>(undefined);
   const [search, setSearch] = useState('');
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
 
   const fetchStudents = async () => {
@@ -168,6 +170,9 @@ export default function StudentList() {
           >
             + Add Student
           </button>
+          <button onClick={() => setShowBulkImport(true)} className="text-xs font-medium bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-slate-800">
+  📄 Bulk Import
+</button>
         </div>
 
         <input
@@ -223,6 +228,15 @@ export default function StudentList() {
           onClose={() => { setShowForm(false); setEditing(undefined); }}
         />
       )}
+      {showBulkImport && (
+  <BulkImportModal
+    onImported={() => {
+      setShowBulkImport(false);
+      fetchStudents();
+    }}
+    onClose={() => setShowBulkImport(false)}
+  />
+)}
     </div>
   );
 }
