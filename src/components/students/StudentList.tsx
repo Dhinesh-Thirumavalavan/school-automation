@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types';
-import { API_URL } from '../../config';
 import BirthdayAutomation from './BirthdayAutomation';
 import StudentFormModal from './StudentFormModal';
 import BulkImportModal from './BulkImportModal';
+import { API_URL } from '../../config';
 
 const classOrder = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
 
@@ -19,9 +19,9 @@ export default function StudentList() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [editing, setEditing] = useState<Student | undefined>(undefined);
   const [search, setSearch] = useState('');
-  const [showBulkImport, setShowBulkImport] = useState(false);
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
 
   const fetchStudents = async () => {
@@ -94,6 +94,16 @@ export default function StudentList() {
     setEditing(undefined);
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete ${name}? This will also remove their fee records and attendance history.`)) return;
+    try {
+      await fetch(`${API_URL}/api/students/${id}`, { method: 'DELETE' });
+      await fetchStudents();
+    } catch (err) {
+      console.error('Failed to delete student', err);
+    }
+  };
+
   const toggleClass = (cls: string) => {
     setExpandedClasses((prev) => {
       const next = new Set(prev);
@@ -119,7 +129,7 @@ export default function StudentList() {
 
   const renderTable = (list: Student[]) => (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm min-w-125">
         <thead className="bg-slate-50 text-slate-500 text-left">
           <tr>
             <th className="px-4 py-2 font-medium">Name</th>
@@ -140,12 +150,18 @@ export default function StudentList() {
               <td className="px-4 py-2 text-slate-600">{s.rollNo || '—'}</td>
               <td className="px-4 py-2 text-slate-600">{s.parentPhone}</td>
               <td className="px-4 py-2 text-slate-600">{s.birthday}</td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2 whitespace-nowrap">
                 <button
                   onClick={() => { setEditing(s); setShowForm(true); }}
-                  className="text-xs text-emerald-700 font-medium hover:underline"
+                  className="text-xs text-emerald-700 font-medium hover:underline mr-3"
                 >
                   Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(s.id, s.name)}
+                  className="text-xs text-red-500 font-medium hover:underline"
+                >
+                  Delete
                 </button>
               </td>
             </tr>
@@ -164,15 +180,20 @@ export default function StudentList() {
           <h3 className="text-sm font-semibold text-slate-800">
             All Students <span className="text-slate-400 font-normal">({students.length})</span>
           </h3>
-          <button
-            onClick={() => { setEditing(undefined); setShowForm(true); }}
-            className="text-xs font-medium bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700"
-          >
-            + Add Student
-          </button>
-          <button onClick={() => setShowBulkImport(true)} className="text-xs font-medium bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-slate-800">
-  📄 Bulk Import
-</button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="text-xs font-medium bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-slate-800"
+            >
+              📄 Bulk Import
+            </button>
+            <button
+              onClick={() => { setEditing(undefined); setShowForm(true); }}
+              className="text-xs font-medium bg-emerald-600 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-700"
+            >
+              + Add Student
+            </button>
+          </div>
         </div>
 
         <input
@@ -228,15 +249,16 @@ export default function StudentList() {
           onClose={() => { setShowForm(false); setEditing(undefined); }}
         />
       )}
+
       {showBulkImport && (
-  <BulkImportModal
-    onImported={() => {
-      setShowBulkImport(false);
-      fetchStudents();
-    }}
-    onClose={() => setShowBulkImport(false)}
-  />
-)}
+        <BulkImportModal
+          onImported={() => {
+            setShowBulkImport(false);
+            fetchStudents();
+          }}
+          onClose={() => setShowBulkImport(false)}
+        />
+      )}
     </div>
   );
 }
