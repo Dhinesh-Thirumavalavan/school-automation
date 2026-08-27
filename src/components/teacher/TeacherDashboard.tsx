@@ -103,7 +103,7 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
   return (
     <div className="max-w-3xl space-y-4">
       {assignedClasses.length > 1 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {assignedClasses.map((c) => (
             <button
               key={c}
@@ -118,12 +118,12 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
         </div>
       )}
 
-      <div className="flex gap-2 border-b border-slate-200 pb-2">
+      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         {(['attendance', 'homework', 'compose'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`text-sm px-3 py-1.5 rounded-t-lg ${
+            className={`text-sm px-3 py-1.5 rounded-t-lg shrink-0 ${
               activeTab === tab ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -156,54 +156,56 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
           </p>
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-left">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Name</th>
-                  <th className="px-4 py-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {students.map((s) => (
-                  <tr key={s.id}>
-                    <td className="px-4 py-2 font-medium text-slate-800">{s.name}</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => markStudent(s.id, 'present')}
-                          disabled={marking === s.id}
-                          className={`text-xs px-3 py-1 rounded-full border ${
-                            attendance[s.id] === 'present'
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          Present
-                        </button>
-                        <button
-                          onClick={() => markStudent(s.id, 'absent')}
-                          disabled={marking === s.id}
-                          className={`text-xs px-3 py-1 rounded-full border ${
-                            attendance[s.id] === 'absent'
-                              ? 'bg-red-600 text-white border-red-600'
-                              : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          Absent
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {students.length === 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-87.5">
+                <thead className="bg-slate-50 text-slate-500 text-left">
                   <tr>
-                    <td colSpan={2} className="px-4 py-6 text-center text-slate-400">
-                      No students found for {activeClass}.
-                    </td>
+                    <th className="px-4 py-2 font-medium">Name</th>
+                    <th className="px-4 py-2 font-medium">Status</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.map((s) => (
+                    <tr key={s.id}>
+                      <td className="px-4 py-2 font-medium text-slate-800">{s.name}</td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => markStudent(s.id, 'present')}
+                            disabled={marking === s.id}
+                            className={`text-xs px-3 py-1 rounded-full border ${
+                              attendance[s.id] === 'present'
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Present
+                          </button>
+                          <button
+                            onClick={() => markStudent(s.id, 'absent')}
+                            disabled={marking === s.id}
+                            className={`text-xs px-3 py-1 rounded-full border ${
+                              attendance[s.id] === 'absent'
+                                ? 'bg-red-600 text-white border-red-600'
+                                : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            Absent
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {students.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="px-4 py-6 text-center text-slate-400">
+                        No students found for {activeClass}.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -234,8 +236,8 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
               <p className="text-xs font-medium text-slate-500">Recent homework</p>
               {homeworkHistory.map((h) => (
                 <div key={h.id} className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-sm text-slate-800">{h.english_text}</p>
-                  <p className="text-xs text-slate-500 mt-1">{h.tamil_text}</p>
+                  <p className="text-sm text-slate-800 wrap-break-word">{h.english_text}</p>
+                  <p className="text-xs text-slate-500 mt-1 wrap-break-word">{h.tamil_text}</p>
                   <p className="text-[10px] text-slate-400 mt-1">{new Date(h.posted_at).toLocaleString('en-IN')}</p>
                 </div>
               ))}

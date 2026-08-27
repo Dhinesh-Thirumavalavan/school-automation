@@ -145,41 +145,43 @@ export default function ManageTeachers() {
       )}
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 text-left">
-            <tr>
-              <th className="px-4 py-2 font-medium">Name</th>
-              <th className="px-4 py-2 font-medium">Email</th>
-              <th className="px-4 py-2 font-medium">Classes</th>
-              <th className="px-4 py-2 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {teachers.map((t) => (
-              <tr key={t.id}>
-                <td className="px-4 py-2 font-medium text-slate-800">{t.name}</td>
-                <td className="px-4 py-2 text-slate-600">{t.email}</td>
-                <td className="px-4 py-2 text-slate-600">{t.assigned_classes.join(', ')}</td>
-                <td className="px-4 py-2">
-                  <button
-                    onClick={() => handleResetPassword(t.id, t.name)}
-                    disabled={resettingId === t.id}
-                    className="text-xs text-emerald-700 hover:underline disabled:opacity-50"
-                  >
-                    {resettingId === t.id ? 'Resetting...' : 'Reset Password'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {teachers.length === 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-125">
+            <thead className="bg-slate-50 text-slate-500 text-left">
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  No teacher accounts yet.
-                </td>
+                <th className="px-4 py-2 font-medium">Name</th>
+                <th className="px-4 py-2 font-medium">Email</th>
+                <th className="px-4 py-2 font-medium">Classes</th>
+                <th className="px-4 py-2 font-medium">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {teachers.map((t) => (
+                <tr key={t.id}>
+                  <td className="px-4 py-2 font-medium text-slate-800">{t.name}</td>
+                  <td className="px-4 py-2 text-slate-600">{t.email}</td>
+                  <td className="px-4 py-2 text-slate-600">{t.assigned_classes.join(', ')}</td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => handleResetPassword(t.id, t.name)}
+                      disabled={resettingId === t.id}
+                      className="text-xs text-emerald-700 hover:underline disabled:opacity-50"
+                    >
+                      {resettingId === t.id ? 'Resetting...' : 'Reset Password'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {teachers.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    No teacher accounts yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

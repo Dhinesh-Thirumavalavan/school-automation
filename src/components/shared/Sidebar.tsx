@@ -46,19 +46,19 @@ export default function Sidebar({ active, onNavigate, isAdmin }: SidebarProps) {
       </aside>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex overflow-x-auto py-2 z-40">
-  {navItems.map((item) => (
-    <button
-      key={item.key}
-      onClick={() => onNavigate(item.key)}
-      className={`flex flex-col items-center gap-0.5 px-3 py-1 shrink-0 min-w-14 text-[9px] ${
-        active === item.key ? 'text-emerald-400' : 'text-slate-400'
-      }`}
-    >
-      <span className="text-base">{item.icon}</span>
-      <span>{item.label}</span>
-    </button>
-  ))}
-</nav>
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => onNavigate(item.key)}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 shrink-0 min-w-14 text-[9px] ${
+              active === item.key ? 'text-emerald-400' : 'text-slate-400'
+            }`}
+          >
+            <span className="text-base">{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </>
   );
 }

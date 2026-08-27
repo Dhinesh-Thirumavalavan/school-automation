@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types';
-import { API_URL } from '../../config';
 import AnalyticsSummary from './AnalyticsSummary';
 import BirthdayAutomation from '../students/BirthdayAutomation';
 import UpcomingEvents from './UpcomingEvents';
 import NotableDaysTicker from './NotableDaysTicker';
 import AttendanceSummary from './AttendanceSummary';
+import { API_URL } from '../../config';
 
 export default function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -30,10 +30,10 @@ export default function Dashboard() {
     <div className="max-w-4xl space-y-4">
       <NotableDaysTicker />
       <AnalyticsSummary />
+      <AttendanceSummary />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BirthdayAutomation students={students} />
         <UpcomingEvents />
-        <AttendanceSummary />
       </div>
     </div>
   );
