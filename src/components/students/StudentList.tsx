@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Student } from '../../types';
+import type { Student } from '../../types';
 import BirthdayAutomation from './BirthdayAutomation';
 import StudentFormModal from './StudentFormModal';
 import BulkImportModal from './BulkImportModal';
@@ -135,7 +135,7 @@ export default function StudentList() {
 
   const renderTable = (list: Student[]) => (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm min-w-[500px]">
+      <table className="w-full text-sm min-w-125">
         <thead className="bg-slate-50 text-slate-500 text-left">
           <tr>
             <th className="px-4 py-2 font-medium">Name</th>
