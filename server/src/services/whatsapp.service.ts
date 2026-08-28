@@ -4,6 +4,8 @@ import qrcode from 'qrcode-terminal';
 
 export let waReady = false;
 export let currentQR: string | null = null;
+export let captureMode = false;
+export let capturedGroups: { id: string; name: string }[] = [];
 
 const sessionPath = '/app/.wwebjs_auth';
 try {
@@ -48,6 +50,37 @@ waClient.on('disconnected', () => {
   waReady = false;
   console.log('⚠️ WhatsApp client disconnected');
 });
+
+// Passively capture group chat IDs when a message arrives, while capture mode is on
+// (workaround for the currently-broken getChats() bug in whatsapp-web.js)
+waClient.on('message', async (msg) => {
+  if (!captureMode) return;
+  try {
+    const chat = await msg.getChat();
+    if (chat.isGroup) {
+      const alreadyCaptured = capturedGroups.some((g) => g.id === chat.id._serialized);
+      if (!alreadyCaptured) {
+        capturedGroups.push({ id: chat.id._serialized, name: chat.name });
+        console.log(`Captured group: ${chat.name} (${chat.id._serialized})`);
+      }
+    }
+  } catch (err) {
+    console.error('Error capturing group from message event:', err);
+  }
+});
+
+export function startCapture() {
+  captureMode = true;
+  capturedGroups = [];
+}
+
+export function stopCapture() {
+  captureMode = false;
+}
+
+export function getCapturedGroups() {
+  return capturedGroups;
+}
 
 export async function sendToPhone(phone: string, message: string) {
   if (!waReady) {

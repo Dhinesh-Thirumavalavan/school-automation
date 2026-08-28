@@ -5,7 +5,7 @@ import { MessageMedia } from 'whatsapp-web.js';
 import { supabase } from '../services/supabase.service';
 import { translateText } from '../services/groq.service';
 import { logMessage } from '../services/logMessage.service';
-import { sendToPhone, waClient, waReady } from '../services/whatsapp.service';
+import { sendToPhone, waClient, waReady, startCapture, stopCapture, getCapturedGroups } from '../services/whatsapp.service';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/', limits: { fileSize: 16 * 1024 * 1024 } });
@@ -100,7 +100,7 @@ router.post('/:id/send-birthday', async (req, res) => {
   }
 });
 
-// Bulk import — fixed path (was incorrectly duplicated as /api/students/api/students/bulk-import)
+// Bulk import
 router.post('/bulk-import', async (req, res) => {
   try {
     const { students } = req.body;
@@ -118,25 +118,25 @@ router.post('/bulk-import', async (req, res) => {
   }
 });
 
-
 router.delete('/:id', async (req, res) => {
   const { error } = await supabase.from('students').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-router.get('/groups', async (req, res) => {
-  try {
-    if (!waReady) return res.status(503).json({ error: 'WhatsApp not ready' });
-    const chats = await waClient.getChats();
-    const groups = chats
-      .filter((chat) => chat.isGroup)
-      .map((chat) => ({ id: chat.id._serialized, name: chat.name }));
-    res.json(groups);
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+// --- Group capture (replaces broken getChats()-based /groups route) ---
+router.post('/groups/start-capture', (req, res) => {
+  startCapture();
+  res.json({ success: true, message: 'Capture mode ON — send a test message in each group now.' });
+});
+
+router.get('/groups/captured', (req, res) => {
+  res.json(getCapturedGroups());
+});
+
+router.post('/groups/stop-capture', (req, res) => {
+  stopCapture();
+  res.json({ success: true });
 });
 
 router.get('/class-groups', async (req, res) => {
