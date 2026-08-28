@@ -67,6 +67,18 @@ export async function sendToPhone(phone: string, message: string) {
   }
 }
 
+export async function sendToGroup(groupChatId: string, message: string) {
+  if (!waReady) {
+    console.log('⚠️ WhatsApp not ready yet, skipping group send to', groupChatId);
+    return;
+  }
+  try {
+    await waClient.sendMessage(groupChatId, message);
+  } catch (err) {
+    console.error(`Failed to send to group ${groupChatId}:`, err);
+  }
+}
+
 export function initializeWhatsApp() {
   return waClient.initialize();
 }

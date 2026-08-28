@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ManageTeachers from './ManageTeachers';
+import ClassGroupMapping from './ClassGroupMapping';
 
 export default function Settings() {
   const [schoolName, setSchoolName] = useState('E.A.S. Academy');
@@ -47,6 +48,9 @@ export default function Settings() {
       </form>
       <div className="mt-8">
   <ManageTeachers />
+  <div className="mt-8">
+  <ClassGroupMapping />
+</div>
 </div>
     </div>
   );

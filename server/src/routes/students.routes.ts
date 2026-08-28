@@ -125,4 +125,40 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+router.get('/groups', async (req, res) => {
+  try {
+    if (!waReady) return res.status(503).json({ error: 'WhatsApp not ready' });
+    const chats = await waClient.getChats();
+    const groups = chats
+      .filter((chat) => chat.isGroup)
+      .map((chat) => ({ id: chat.id._serialized, name: chat.name }));
+    res.json(groups);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/class-groups', async (req, res) => {
+  const { data, error } = await supabase.from('class_whatsapp_groups').select('*');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.post('/class-groups', async (req, res) => {
+  const { class: studentClass, group_chat_id, group_name } = req.body;
+  const { data, error } = await supabase
+    .from('class_whatsapp_groups')
+    .upsert([{ class: studentClass, group_chat_id, group_name }], { onConflict: 'class' })
+    .select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+
+router.delete('/class-groups/:class', async (req, res) => {
+  const { error } = await supabase.from('class_whatsapp_groups').delete().eq('class', req.params.class);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
 export default router;
