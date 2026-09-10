@@ -11,6 +11,7 @@ import eventsRouter from './routes/events.routes';
 import attendanceRouter from './routes/attendance.routes';
 import homeworkRouter from './routes/homework.routes';
 import teachersRouter, { authRouter } from './routes/teachers.routes';
+import parentAuthRouter from './routes/parentAuth.routes';
 import systemRouter from './routes/system.routes';
 import historyRouter from './routes/history.routes';
 import { startBirthdayJob } from './cron/birthdayJob';
@@ -32,6 +33,7 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/homework', homeworkRouter);
 app.use('/api/teachers', teachersRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/parent-auth', parentAuthRouter);
 app.use('/', systemRouter);
 
 initializeWhatsApp();
