@@ -33,7 +33,11 @@ router.post('/request-otp', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore.set(phone, { otp, expiresAt: Date.now() + OTP_TTL_MS });
 
-    await sendToPhone(phone, `Your Kalvi parent portal OTP is ${otp}. Valid for 5 minutes.`);
+    const sent = await sendToPhone(phone, `Your Kalvi parent portal OTP is ${otp}. Valid for 5 minutes.`);
+    if (!sent) {
+      otpStore.delete(phone);
+      return res.status(503).json({ error: 'Could not send the OTP right now — WhatsApp service is temporarily unavailable. Please try again shortly or contact the school office.' });
+    }
 
     res.json({ success: true });
   } catch (err: any) {
