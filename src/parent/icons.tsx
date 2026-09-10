@@ -1,0 +1,89 @@
+type IconProps = { className?: string };
+const base = 'w-5 h-5';
+const stroke = { strokeWidth: 1.8, stroke: 'currentColor', fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+export const HomeIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M3 11.5 12 4l9 7.5" />
+    <path d="M5.5 10v9a1 1 0 0 0 1 1H9v-6h6v6h2.5a1 1 0 0 0 1-1v-9" />
+  </svg>
+);
+
+export const InboxIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <rect x="3.5" y="5" width="17" height="14" rx="2" />
+    <path d="m4 6 8 6 8-6" />
+  </svg>
+);
+
+export const WalletIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <rect x="3" y="6" width="18" height="13" rx="2" />
+    <path d="M3 10h18" />
+    <circle cx="16" cy="14.5" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const UserIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <circle cx="12" cy="8" r="3.5" />
+    <path d="M5 20c1.2-4 4.2-6 7-6s5.8 2 7 6" />
+  </svg>
+);
+
+export const ChevronLeftIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M15 5 8 12l7 7" />
+  </svg>
+);
+
+export const ChevronRightIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="m9 5 7 7-7 7" />
+  </svg>
+);
+
+export const BellIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10Z" />
+    <path d="M10 19a2 2 0 0 0 4 0" />
+  </svg>
+);
+
+export const BookIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5Z" />
+    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5Z" />
+  </svg>
+);
+
+export const FlagIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M6 3v18" />
+    <path d="M6 4h11l-2.5 4L17 12H6" />
+  </svg>
+);
+
+export const ClockIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </svg>
+);
+
+export const SwapIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="m7 8 3-3 3 3" />
+    <path d="M10 5v10" />
+    <path d="m17 16-3 3-3-3" />
+    <path d="M14 19V9" />
+  </svg>
+);
+
+export const LogOutIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" />
+    <path d="M14 16l4-4-4-4" />
+    <path d="M18 12H9" />
+  </svg>
+);

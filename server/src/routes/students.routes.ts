@@ -24,7 +24,19 @@ router.get('/search', async (req, res) => {
 });
 
 router.get('/:id/fees', async (req, res) => {
-  const { data, error } = await supabase.from('fee_records').select('*').eq('student_id', req.params.id).neq('status', 'paid');
+  let query = supabase.from('fee_records').select('*').eq('student_id', req.params.id);
+  if (req.query.all !== 'true') query = query.neq('status', 'paid');
+  const { data, error } = await query.order('due_date', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+router.get('/:id/payments', async (req, res) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('student_id', req.params.id)
+    .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
