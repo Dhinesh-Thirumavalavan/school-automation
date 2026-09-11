@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase.service';
 import { translateText } from '../services/groq.service';
 import { logMessage } from '../services/logMessage.service';
 import { sendToPhone } from '../services/whatsapp.service';
+import { sendPushToPhones } from '../services/push.service';
 
 const router = express.Router();
 export const paymentsRouter = express.Router();
@@ -17,6 +18,15 @@ router.post('/', async (req, res) => {
   const { student_id, amount_due, due_date, status } = req.body;
   const { data, error } = await supabase.from('fee_records').insert([{ student_id, amount_due, due_date, status: status || 'unpaid' }]).select();
   if (error) return res.status(500).json({ error: error.message });
+  const { data: student } = await supabase.from('students').select('name, parent_phone, alternate_phone').eq('id', student_id).single();
+  if (student) {
+    const phones = [student.parent_phone, student.alternate_phone].filter(Boolean);
+    await sendPushToPhones(phones, {
+      title: 'New Fee Due',
+      body: `₹${amount_due} due by ${new Date(due_date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} for ${student.name}`,
+      url: '/parent',
+    });
+  }
   res.json(data[0]);
 });
 
@@ -67,6 +77,11 @@ const createPayment = async (req: express.Request, res: express.Response) => {
       const english = `Payment received! ₹${amount_paid} (${payment_mode.toUpperCase()}). Receipt No: ${receiptNo}. Thank you!`;
       const tamil = await translateText(english);
       await sendToPhone(student.parent_phone, `${english}\n\n${tamil}`);
+      await sendPushToPhones([student.parent_phone, student.alternate_phone].filter(Boolean), {
+        title: 'Payment Received',
+        body: `₹${amount_paid} (${payment_mode.toUpperCase()}) — Receipt ${receiptNo}`,
+        url: '/parent',
+      });
       await logMessage(english, tamil, `Payment Receipt — ${student.name}`, 1);
     }
     res.json(payment[0]);

@@ -82,21 +82,23 @@ export function getCapturedGroups() {
   return capturedGroups;
 }
 
-export async function sendToPhone(phone: string, message: string) {
+export async function sendToPhone(phone: string, message: string): Promise<boolean> {
   if (!waReady) {
     console.log('⚠️ WhatsApp not ready yet, skipping send to', phone);
-    return;
+    return false;
   }
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   try {
     const numberId = await waClient.getNumberId(cleanPhone);
     if (!numberId) {
       console.log(`⚠️ ${cleanPhone} is not a valid WhatsApp number`);
-      return;
+      return false;
     }
     await waClient.sendMessage(numberId._serialized, message);
+    return true;
   } catch (err) {
     console.error(`Failed to send to ${cleanPhone}:`, err);
+    return false;
   }
 }
 
