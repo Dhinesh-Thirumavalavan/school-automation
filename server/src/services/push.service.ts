@@ -35,7 +35,7 @@ export async function sendPushToPhone(phone: string, payload: { title: string; b
 
   for (const sub of subs) {
     try {
-      await webpush.sendNotification(sub, json);
+      await webpush.sendNotification(sub, json, { urgency: 'high' });
     } catch (err: any) {
       if (err.statusCode === 404 || err.statusCode === 410) {
         removeSubscription(phone, sub.endpoint);

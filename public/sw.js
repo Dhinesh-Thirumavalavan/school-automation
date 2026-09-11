@@ -19,6 +19,8 @@ self.addEventListener('push', (event) => {
       body: payload.body,
       icon: '/favicon.svg',
       badge: '/favicon.svg',
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
       data: { url: payload.url },
     })
   );
