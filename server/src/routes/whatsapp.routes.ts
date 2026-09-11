@@ -1,5 +1,6 @@
 import express from 'express';
 import { sendToPhone } from '../services/whatsapp.service';
+import { sendPushToPhones } from '../services/push.service';
 import { logMessage } from '../services/logMessage.service';
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.post('/', async (req, res) => {
     }
 
     const [englishPart, tamilPart] = message.split('\n\n');
+    await sendPushToPhones(phones, { title: 'School Announcement', body: englishPart, url: '/parent' });
     await logMessage(englishPart, tamilPart || '', audience || 'Custom', phones.length, failed);
 
     res.json({ success: true, sentCount: phones.length - failed.length, failedCount: failed.length });

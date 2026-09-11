@@ -51,22 +51,24 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col max-w-md mx-auto">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+      <header className="bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-sm shadow-slate-200/50">
         {pushed ? (
           <>
-            <button onClick={() => setPushed(null)} className="text-slate-600"><ChevronLeftIcon /></button>
+            <button onClick={() => setPushed(null)} className="text-slate-600 -ml-1 p-1 rounded-lg hover:bg-slate-100 active:scale-95 transition-transform">
+              <ChevronLeftIcon />
+            </button>
             <span className="font-semibold text-slate-900">{pushedTitles[pushed]}</span>
           </>
         ) : (
           <>
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-semibold text-sm shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm shadow-emerald-900/20">
               EA
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 truncate">E.A.S. Academy</p>
-              <p className="text-xs text-slate-500">School Portal</p>
+              <p className="text-sm font-semibold text-slate-900 truncate leading-tight">E.A.S. Academy</p>
+              <p className="text-[11px] text-slate-500 leading-tight">School Portal</p>
             </div>
-            <button onClick={() => setTab('inbox')} className="ml-auto text-slate-500 p-1.5 rounded-lg hover:bg-slate-100">
+            <button onClick={() => setTab('inbox')} className="ml-auto text-slate-500 p-1.5 rounded-lg hover:bg-slate-100 active:scale-95 transition-transform">
               <BellIcon />
             </button>
           </>
@@ -90,22 +92,27 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
         {!pushed && tab === 'inbox' && <Inbox />}
         {!pushed && tab === 'fees' && <Fees student={student} />}
         {!pushed && tab === 'profile' && (
-          <Profile students={session.students} selectedIndex={selectedIndex} onSelect={setSelectedIndex} onLogout={onLogout} />
+          <Profile students={session.students} selectedIndex={selectedIndex} onSelect={setSelectedIndex} onLogout={onLogout} phone={session.phone} />
         )}
       </main>
 
       {!pushed && (
-        <nav className="bg-white border-t border-slate-200 flex sticky bottom-0">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 text-xs ${tab === key ? 'text-emerald-700' : 'text-slate-400'}`}
-            >
-              <Icon />
-              {label}
-            </button>
-          ))}
+        <nav className="bg-white border-t border-slate-200 flex sticky bottom-0 pb-[env(safe-area-inset-bottom)]">
+          {tabs.map(({ key, label, icon: Icon }) => {
+            const active = tab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-xs transition-colors ${active ? 'text-emerald-700' : 'text-slate-400'}`}
+              >
+                <span className={`px-3 py-1 rounded-full transition-colors ${active ? 'bg-emerald-50' : ''}`}>
+                  <Icon />
+                </span>
+                <span className={active ? 'font-semibold' : ''}>{label}</span>
+              </button>
+            );
+          })}
         </nav>
       )}
     </div>
