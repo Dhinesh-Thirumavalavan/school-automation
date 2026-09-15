@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { API_URL } from '../../config';
 import { Card, EmptyState, Skeleton } from '../ui';
 import type { ParentStudent } from '../types';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const POLL_INTERVAL_MS = 8000;
 const ASSUMED_SPEED_KMH = 20;
 
@@ -41,6 +40,17 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+const busIcon = L.divIcon({
+  html: '<div style="font-size:22px;line-height:1;transform:translate(-50%,-50%)">🚌</div>',
+  className: '',
+  iconSize: [0, 0],
+});
+const stopIcon = L.divIcon({
+  html: '<div style="font-size:22px;line-height:1;transform:translate(-50%,-90%)">📍</div>',
+  className: '',
+  iconSize: [0, 0],
+});
+
 interface BusDetailProps {
   student: ParentStudent;
 }
@@ -49,9 +59,8 @@ export default function BusDetail({ student }: BusDetailProps) {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [live, setLive] = useState<LiveLocation | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const busMarker = useRef<mapboxgl.Marker | null>(null);
-  const stopMarker = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const busMarker = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/api/bus/by-student/${student.id}`)
@@ -76,32 +85,27 @@ export default function BusDetail({ student }: BusDetailProps) {
   }, [assignment]);
 
   useEffect(() => {
-    if (!MAPBOX_TOKEN || !mapContainer.current || !assignment?.stop || mapRef.current) return;
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [assignment.stop.longitude, assignment.stop.latitude],
-      zoom: 13,
-    });
-    stopMarker.current = new mapboxgl.Marker({ color: '#dc2626' })
-      .setLngLat([assignment.stop.longitude, assignment.stop.latitude])
-      .setPopup(new mapboxgl.Popup().setText(assignment.stop.name))
-      .addTo(mapRef.current);
+    if (!mapContainer.current || !assignment?.stop || mapRef.current) return;
+    const map = L.map(mapContainer.current).setView([assignment.stop.latitude, assignment.stop.longitude], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+    L.marker([assignment.stop.latitude, assignment.stop.longitude], { icon: stopIcon })
+      .addTo(map)
+      .bindPopup(assignment.stop.name);
+    mapRef.current = map;
   }, [assignment]);
 
   useEffect(() => {
     if (!mapRef.current || !live?.location) return;
     const { latitude, longitude } = live.location;
     if (busMarker.current) {
-      busMarker.current.setLngLat([longitude, latitude]);
+      busMarker.current.setLatLng([latitude, longitude]);
     } else {
-      const el = document.createElement('div');
-      el.textContent = '🚌';
-      el.style.fontSize = '24px';
-      busMarker.current = new mapboxgl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(mapRef.current);
+      busMarker.current = L.marker([latitude, longitude], { icon: busIcon }).addTo(mapRef.current);
     }
-    mapRef.current.easeTo({ center: [longitude, latitude] });
+    mapRef.current.panTo([latitude, longitude]);
   }, [live]);
 
   useEffect(() => {
@@ -145,13 +149,7 @@ export default function BusDetail({ student }: BusDetailProps) {
         )}
       </Card>
 
-      {MAPBOX_TOKEN ? (
-        <div ref={mapContainer} className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200" />
-      ) : (
-        <Card className="p-4">
-          <p className="text-sm text-slate-500">Map isn't configured yet — set VITE_MAPBOX_TOKEN to enable it.</p>
-        </Card>
-      )}
+      <div ref={mapContainer} className="w-full h-80 rounded-2xl overflow-hidden border border-slate-200" />
 
       <Card className="p-4">
         <p className="text-sm font-medium text-slate-800">Pickup point</p>
