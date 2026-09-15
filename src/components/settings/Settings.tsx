@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ManageTeachers from './ManageTeachers';
 import ClassGroupMapping from './ClassGroupMapping';
+import BusRoutes from './BusRoutes';
 
 export default function Settings() {
   const [schoolName, setSchoolName] = useState('E.A.S. Academy');
@@ -50,6 +51,9 @@ export default function Settings() {
   <ManageTeachers />
   <div className="mt-8">
   <ClassGroupMapping />
+</div>
+  <div className="mt-8">
+  <BusRoutes />
 </div>
 </div>
     </div>
