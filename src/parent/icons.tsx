@@ -80,6 +80,17 @@ export const SwapIcon = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const BusIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <rect x="3.5" y="4.5" width="17" height="12" rx="2.5" />
+    <path d="M3.5 10h17" />
+    <path d="M7 16.5v2" />
+    <path d="M17 16.5v2" />
+    <circle cx="7.5" cy="19" r="1.3" />
+    <circle cx="16.5" cy="19" r="1.3" />
+  </svg>
+);
+
 export const LogOutIcon = ({ className = base }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...stroke}>
     <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { ParentSession } from './types';
 import { HomeIcon, InboxIcon, WalletIcon, UserIcon, ChevronLeftIcon, BellIcon } from './icons';
 import Home from './screens/Home';
@@ -8,9 +8,13 @@ import Profile from './screens/Profile';
 import AttendanceDetail from './screens/AttendanceDetail';
 import HomeworkDetail from './screens/HomeworkDetail';
 import EventsDetail from './screens/EventsDetail';
+import { Skeleton } from './ui';
+
+// mapbox-gl is a large dependency — only fetch it when the Bus screen is opened
+const BusDetail = lazy(() => import('./screens/BusDetail'));
 
 type Tab = 'home' | 'inbox' | 'fees' | 'profile';
-type Pushed = 'attendance' | 'homework' | 'events' | null;
+type Pushed = 'attendance' | 'homework' | 'events' | 'bus' | null;
 
 interface ParentAppProps {
   session: ParentSession;
@@ -28,6 +32,7 @@ const pushedTitles: Record<Exclude<Pushed, null>, string> = {
   attendance: 'Attendance',
   homework: 'Homework',
   events: 'Events',
+  bus: 'Bus Tracking',
 };
 
 export default function ParentApp({ session, onLogout }: ParentAppProps) {
@@ -79,6 +84,11 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
         {pushed === 'attendance' && <AttendanceDetail student={student} />}
         {pushed === 'homework' && <HomeworkDetail student={student} />}
         {pushed === 'events' && <EventsDetail />}
+        {pushed === 'bus' && (
+          <Suspense fallback={<div className="p-4"><Skeleton className="h-64 rounded-2xl" /></div>}>
+            <BusDetail student={student} />
+          </Suspense>
+        )}
         {!pushed && tab === 'home' && (
           <Home
             student={student}
@@ -86,6 +96,7 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
             onOpenFees={() => setTab('fees')}
             onOpenHomework={() => setPushed('homework')}
             onOpenEvents={() => setPushed('events')}
+            onOpenBus={() => setPushed('bus')}
             onOpenInbox={() => setTab('inbox')}
           />
         )}
