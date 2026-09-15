@@ -63,31 +63,102 @@ router.get('/', async (req, res) => {
   res.json(data);
 });
 
-// Admin: approve/reject — notifies the parent on both WhatsApp and push
-router.put('/:id', async (req, res) => {
+async function notifyParent(leave: any, english: string) {
+  const student = leave.students as any;
+  if (!student) return;
+  const tamil = await translateText(english);
+  const phones = [student.parent_phone, student.alternate_phone].filter(Boolean);
+  for (const phone of phones) await sendToPhone(phone, `${english}\n\n${tamil}`);
+  await sendPushToPhones(phones, { title: 'Leave Request Update', body: english, url: '/parent' });
+}
+
+function leavePeriod(leave: any) {
+  return `${leave.leave_type}, ${leave.start_date}${leave.end_date !== leave.start_date ? ` to ${leave.end_date}` : ''}`;
+}
+
+// Class teacher: first-stage decision. A rejection is final; an approval is forwarded to the principal.
+router.put('/:id/teacher-decision', async (req, res) => {
   try {
     const { status, reviewed_by } = req.body as { status: 'approved' | 'rejected'; reviewed_by?: string };
     if (status !== 'approved' && status !== 'rejected') {
       return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
     }
 
+    const { data: existing, error: fetchError } = await supabase
+      .from('leave_requests')
+      .select('teacher_status')
+      .eq('id', req.params.id)
+      .single();
+    if (fetchError) throw fetchError;
+    if (existing.teacher_status !== 'pending') {
+      return res.status(409).json({ error: 'This request has already been reviewed by the class teacher.' });
+    }
+
+    const now = new Date().toISOString();
+    const update: Record<string, any> = {
+      teacher_status: status,
+      teacher_reviewed_by: reviewed_by || 'Class Teacher',
+      teacher_reviewed_at: now,
+    };
+    // A teacher rejection is final — no need for the principal to also review it.
+    if (status === 'rejected') {
+      update.status = 'rejected';
+      update.reviewed_by = reviewed_by || 'Class Teacher';
+      update.reviewed_at = now;
+    }
+
     const { data: leave, error } = await supabase
       .from('leave_requests')
-      .update({ status, reviewed_by: reviewed_by || 'Admin', reviewed_at: new Date().toISOString() })
+      .update(update)
       .eq('id', req.params.id)
       .select('*, students(name, parent_phone, alternate_phone)')
       .single();
     if (error) throw error;
 
-    const student = leave.students as any;
-    if (student) {
-      const verb = status === 'approved' ? 'approved' : 'not approved';
-      const english = `${student.name}'s leave request (${leave.leave_type}, ${leave.start_date}${leave.end_date !== leave.start_date ? ` to ${leave.end_date}` : ''}) has been ${verb}.`;
-      const tamil = await translateText(english);
-      const phones = [student.parent_phone, student.alternate_phone].filter(Boolean);
-      for (const phone of phones) await sendToPhone(phone, `${english}\n\n${tamil}`);
-      await sendPushToPhones(phones, { title: 'Leave Request Update', body: english, url: '/parent' });
+    if (status === 'rejected') {
+      await notifyParent(leave, `${leave.students?.name}'s leave request (${leavePeriod(leave)}) has been rejected by the class teacher.`);
+    } else {
+      await notifyParent(leave, `${leave.students?.name}'s leave request (${leavePeriod(leave)}) has been approved by the class teacher and sent to the Principal for final approval.`);
     }
+
+    res.json(leave);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Principal: final decision, only once the class teacher has approved.
+router.put('/:id/principal-decision', async (req, res) => {
+  try {
+    const { status, reviewed_by } = req.body as { status: 'approved' | 'rejected'; reviewed_by?: string };
+    if (status !== 'approved' && status !== 'rejected') {
+      return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
+    }
+
+    const { data: existing, error: fetchError } = await supabase
+      .from('leave_requests')
+      .select('teacher_status, status')
+      .eq('id', req.params.id)
+      .single();
+    if (fetchError) throw fetchError;
+    if (existing.teacher_status !== 'approved') {
+      return res.status(409).json({ error: 'This request is awaiting the class teacher\'s review before the principal can decide.' });
+    }
+    if (existing.status !== 'pending') {
+      return res.status(409).json({ error: 'This request has already received a final decision.' });
+    }
+
+    const { data: leave, error } = await supabase
+      .from('leave_requests')
+      .update({ status, reviewed_by: reviewed_by || 'Principal', reviewed_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select('*, students(name, parent_phone, alternate_phone)')
+      .single();
+    if (error) throw error;
+
+    const verb = status === 'approved' ? 'approved' : 'not approved';
+    await notifyParent(leave, `${leave.students?.name}'s leave request (${leavePeriod(leave)}) has been ${verb} by the Principal.`);
 
     res.json(leave);
   } catch (err: any) {
