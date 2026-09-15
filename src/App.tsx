@@ -11,8 +11,9 @@ import MessageHistory from './components/history/MessageHistory';
 import Settings from './components/settings/Settings';
 import SystemStatus from './components/shared/SystemStatus';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
+import BusManagement from './components/buses/BusManagement';
 
-type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings';
+type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings' | 'buses';
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -53,6 +54,7 @@ function App() {
               {screen === 'fees' && <FeeTracker />}
               {screen === 'students' && <StudentList />}
               {screen === 'history' && <MessageHistory />}
+              {screen === 'buses' && <BusManagement />}
               {screen === 'settings' && <Settings />}
             </>
           ) : (
