@@ -5,9 +5,58 @@ import { checkProximityAndAlert, notifyTripStarted, notifyTripEnded } from '../s
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const { data, error } = await supabase.from('buses').select('id, bus_number, driver_name').order('bus_number');
+  try {
+    const { data: buses, error } = await supabase.from('buses').select('*').order('bus_number');
+    if (error) throw error;
+
+    const { data: activeTrips } = await supabase.from('bus_trips').select('bus_id, started_at').is('ended_at', null);
+    const activeByBus = new Map((activeTrips || []).map((t) => [t.bus_id, t.started_at]));
+
+    res.json((buses || []).map((b) => ({ ...b, tripActive: activeByBus.has(b.id), tripStartedAt: activeByBus.get(b.id) || null })));
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const { bus_number, driver_name, driver_phone, pin } = req.body;
+    if (!bus_number || !pin) return res.status(400).json({ error: 'bus_number and pin are required' });
+    const { data, error } = await supabase
+      .from('buses')
+      .insert([{ bus_number, driver_name, driver_phone, pin }])
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  try {
+    const { bus_number, driver_name, driver_phone, pin } = req.body;
+    const { data, error } = await supabase
+      .from('buses')
+      .update({ bus_number, driver_name, driver_phone, pin })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  const { error } = await supabase.from('buses').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  res.json({ success: true });
 });
 
 // Driver login: bus number + shared PIN, no individual driver accounts for MVP
