@@ -30,7 +30,10 @@ interface Assignment {
 interface LiveLocation {
   location: { latitude: number; longitude: number; recorded_at: string } | null;
   tripActive: boolean;
+  shift: 'morning' | 'evening' | null;
 }
+
+const shiftLabel = (shift: LiveLocation['shift']) => (shift === 'morning' ? '🌅 Morning Pickup' : shift === 'evening' ? '🌆 Evening Drop' : 'Trip');
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
@@ -265,11 +268,16 @@ function LiveBusView({ bus, stop }: { student: ParentStudent; bus: Bus; stop: St
       <Card className="p-4">
         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{bus.bus_number}</p>
         {!live?.tripActive ? (
-          <p className="text-sm text-slate-500 mt-1">Trip not started yet</p>
-        ) : etaMin !== null ? (
-          <p className="text-lg font-bold text-emerald-700 mt-1">{etaMin} min away from {stop.name}</p>
+          <p className="text-sm text-slate-500 mt-1">No trip in progress right now</p>
         ) : (
-          <p className="text-sm text-slate-500 mt-1">Waiting for GPS signal...</p>
+          <>
+            <p className="text-xs font-semibold text-emerald-700 mt-1">{shiftLabel(live.shift)}</p>
+            {etaMin !== null ? (
+              <p className="text-lg font-bold text-emerald-700 mt-0.5">{etaMin} min away from {stop.name}</p>
+            ) : (
+              <p className="text-sm text-slate-500 mt-0.5">Waiting for GPS signal...</p>
+            )}
+          </>
         )}
       </Card>
 

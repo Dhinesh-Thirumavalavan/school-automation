@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { driverApi, type DriverSession } from './api';
+import { driverApi, type DriverSession, type Shift } from './api';
 
 const LOCATION_INTERVAL_MS = 12000;
+
+const shiftLabels: Record<Shift, string> = {
+  morning: '🌅 Morning Pickup',
+  evening: '🌆 Evening Drop',
+};
 
 export default function DriverApp() {
   const [session, setSession] = useState<DriverSession | null>(null);
@@ -11,6 +16,7 @@ export default function DriverApp() {
   const [error, setError] = useState('');
 
   const [tripActive, setTripActive] = useState(false);
+  const [activeShift, setActiveShift] = useState<Shift | null>(null);
   const [lastSent, setLastSent] = useState<string | null>(null);
   const [gpsError, setGpsError] = useState('');
 
@@ -58,15 +64,16 @@ export default function DriverApp() {
     };
   }, []);
 
-  const startTrip = async () => {
+  const startTrip = async (shift: Shift) => {
     if (!session) return;
     if (!('geolocation' in navigator)) {
       setGpsError('This device/browser does not support GPS location.');
       return;
     }
     setGpsError('');
-    await driverApi.startTrip(session.id);
+    await driverApi.startTrip(session.id, shift);
     setTripActive(true);
+    setActiveShift(shift);
     requestWakeLock();
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -101,6 +108,7 @@ export default function DriverApp() {
     wakeLockRef.current = null;
     await driverApi.endTrip(session.id);
     setTripActive(false);
+    setActiveShift(null);
     setLastSent(null);
   };
 
@@ -169,16 +177,22 @@ export default function DriverApp() {
 
         {tripActive ? (
           <>
-            <p className="text-sm font-semibold text-emerald-700 mb-1">Trip in progress</p>
+            <p className="text-sm font-semibold text-emerald-700 mb-1">{activeShift ? shiftLabels[activeShift] : 'Trip'} in progress</p>
             <p className="text-xs text-slate-500 mb-6">{lastSent ? `Last sent at ${lastSent}` : 'Getting GPS signal...'}</p>
             <button onClick={endTrip} className="w-full bg-red-600 text-white text-sm font-semibold py-3 rounded-xl">
               End Trip
             </button>
           </>
         ) : (
-          <button onClick={startTrip} className="w-full bg-emerald-600 text-white text-sm font-semibold py-3 rounded-xl">
-            Start Trip
-          </button>
+          <div className="space-y-2.5">
+            <p className="text-xs text-slate-500 mb-1">Which trip is this?</p>
+            <button onClick={() => startTrip('morning')} className="w-full bg-emerald-600 text-white text-sm font-semibold py-3 rounded-xl">
+              {shiftLabels.morning}
+            </button>
+            <button onClick={() => startTrip('evening')} className="w-full bg-emerald-600 text-white text-sm font-semibold py-3 rounded-xl">
+              {shiftLabels.evening}
+            </button>
+          </div>
         )}
 
         {gpsError && <p className="text-xs text-red-600 mt-3">{gpsError}</p>}
