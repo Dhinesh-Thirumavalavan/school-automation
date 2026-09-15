@@ -11,14 +11,16 @@ export interface ExamFormValues {
 
 interface ExamFormModalProps {
   initial?: ExamFormValues;
+  classOptions?: string[];
   onSave: (values: ExamFormValues) => void;
   onClose: () => void;
 }
 
-const classOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
+const defaultClassOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
 
-export default function ExamFormModal({ initial, onSave, onClose }: ExamFormModalProps) {
-  const [examClass, setExamClass] = useState(initial?.class ?? classOptions[0]);
+export default function ExamFormModal({ initial, classOptions, onSave, onClose }: ExamFormModalProps) {
+  const options = classOptions && classOptions.length > 0 ? classOptions : defaultClassOptions;
+  const [examClass, setExamClass] = useState(initial?.class ?? options[0]);
   const [subject, setSubject] = useState(initial?.subject ?? '');
   const [examDate, setExamDate] = useState(initial?.exam_date ?? '');
   const [examTime, setExamTime] = useState(initial?.exam_time ?? '');
@@ -43,7 +45,7 @@ export default function ExamFormModal({ initial, onSave, onClose }: ExamFormModa
                 onChange={(e) => setExamClass(e.target.value)}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {classOptions.map((c) => (
+                {options.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

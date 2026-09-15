@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { API_URL } from '../../config';
 import TeacherCompose from './TeacherCompose';
+import LeaveReview from '../leave/LeaveReview';
+import ExamSchedule from '../exams/ExamSchedule';
+import ResultsEntry from '../results/ResultsEntry';
 
 interface Student {
   id: string;
@@ -28,7 +31,7 @@ interface TeacherDashboardProps {
 
 export default function TeacherDashboard({ assignedClasses }: TeacherDashboardProps) {
   const [activeClass, setActiveClass] = useState(assignedClasses[0] || '');
-  const [activeTab, setActiveTab] = useState<'attendance' | 'homework' | 'compose'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'homework' | 'compose' | 'leave' | 'exams' | 'results'>('attendance');
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [marking, setMarking] = useState<string | null>(null);
@@ -119,7 +122,7 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
       )}
 
       <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
-        {(['attendance', 'homework', 'compose'] as const).map((tab) => (
+        {(['attendance', 'homework', 'compose', 'leave', 'exams', 'results'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -127,7 +130,12 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
               activeTab === tab ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            {tab === 'attendance' ? '📋 Attendance' : tab === 'homework' ? '📚 Homework' : '📢 Compose'}
+            {tab === 'attendance' ? '📋 Attendance'
+              : tab === 'homework' ? '📚 Homework'
+              : tab === 'compose' ? '📢 Compose'
+              : tab === 'leave' ? '🗓️ Leave'
+              : tab === 'exams' ? '📝 Exams'
+              : '📊 Results'}
           </button>
         ))}
       </div>
@@ -247,6 +255,9 @@ export default function TeacherDashboard({ assignedClasses }: TeacherDashboardPr
       )}
 
       {activeTab === 'compose' && <TeacherCompose activeClass={activeClass} />}
+      {activeTab === 'leave' && <LeaveReview role="teacher" allowedClasses={assignedClasses} />}
+      {activeTab === 'exams' && <ExamSchedule classOptions={assignedClasses} />}
+      {activeTab === 'results' && <ResultsEntry classOptions={assignedClasses} />}
     </div>
   );
 }
