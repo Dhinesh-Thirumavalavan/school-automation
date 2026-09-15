@@ -9,10 +9,15 @@ router.get('/', async (req, res) => {
     const { data: buses, error } = await supabase.from('buses').select('*').order('bus_number');
     if (error) throw error;
 
-    const { data: activeTrips } = await supabase.from('bus_trips').select('bus_id, started_at').is('ended_at', null);
-    const activeByBus = new Map((activeTrips || []).map((t) => [t.bus_id, t.started_at]));
+    const { data: activeTrips } = await supabase.from('bus_trips').select('bus_id, shift, started_at').is('ended_at', null);
+    const activeByBus = new Map((activeTrips || []).map((t) => [t.bus_id, t]));
 
-    res.json((buses || []).map((b) => ({ ...b, tripActive: activeByBus.has(b.id), tripStartedAt: activeByBus.get(b.id) || null })));
+    res.json(
+      (buses || []).map((b) => {
+        const active = activeByBus.get(b.id);
+        return { ...b, tripActive: !!active, tripStartedAt: active?.started_at || null, tripShift: active?.shift || null };
+      })
+    );
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -80,13 +85,14 @@ router.post('/login', async (req, res) => {
 
 router.post('/:id/start-trip', async (req, res) => {
   try {
+    const { shift } = req.body as { shift?: 'morning' | 'evening' };
     const { data, error } = await supabase
       .from('bus_trips')
-      .insert([{ bus_id: req.params.id }])
+      .insert([{ bus_id: req.params.id, shift: shift || null }])
       .select()
       .single();
     if (error) throw error;
-    notifyTripStarted(req.params.id).catch((err) => console.error('Trip-started notify error:', err));
+    notifyTripStarted(req.params.id, shift || null).catch((err) => console.error('Trip-started notify error:', err));
     res.json(data);
   } catch (err: any) {
     console.error(err);
@@ -98,7 +104,7 @@ router.post('/:id/end-trip', async (req, res) => {
   try {
     const { data: trip } = await supabase
       .from('bus_trips')
-      .select('id, arrived_stop_ids')
+      .select('id, shift, arrived_stop_ids')
       .eq('bus_id', req.params.id)
       .is('ended_at', null)
       .order('started_at', { ascending: false })
@@ -106,13 +112,25 @@ router.post('/:id/end-trip', async (req, res) => {
       .maybeSingle();
     if (trip) {
       await supabase.from('bus_trips').update({ ended_at: new Date().toISOString() }).eq('id', trip.id);
-      notifyTripEnded(req.params.id, trip.arrived_stop_ids || []).catch((err) => console.error('Trip-ended notify error:', err));
+      notifyTripEnded(req.params.id, trip.shift, trip.arrived_stop_ids || []).catch((err) => console.error('Trip-ended notify error:', err));
     }
     res.json({ success: true });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Trip history for a bus — admin view, most recent first
+router.get('/:id/trips', async (req, res) => {
+  const { data, error } = await supabase
+    .from('bus_trips')
+    .select('id, shift, started_at, ended_at')
+    .eq('bus_id', req.params.id)
+    .order('started_at', { ascending: false })
+    .limit(30);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
 router.post('/:id/location', async (req, res) => {
@@ -140,14 +158,14 @@ router.get('/:id/location', async (req, res) => {
 
     const { data: trip } = await supabase
       .from('bus_trips')
-      .select('id, started_at')
+      .select('id, shift, started_at')
       .eq('bus_id', req.params.id)
       .is('ended_at', null)
       .order('started_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    res.json({ location: location || null, tripActive: !!trip });
+    res.json({ location: location || null, tripActive: !!trip, shift: trip?.shift || null });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });

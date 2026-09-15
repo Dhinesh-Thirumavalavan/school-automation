@@ -10,6 +10,7 @@ interface Bus {
   pin: string;
   tripActive: boolean;
   tripStartedAt: string | null;
+  tripShift: 'morning' | 'evening' | null;
 }
 interface Stop {
   id: string;
@@ -18,6 +19,16 @@ interface Stop {
   longitude: number;
   stop_order: number;
 }
+interface Trip {
+  id: string;
+  shift: 'morning' | 'evening' | null;
+  started_at: string;
+  ended_at: string | null;
+}
+
+const shiftLabel = (shift: Trip['shift']) => (shift === 'morning' ? '🌅 Morning Pickup' : shift === 'evening' ? '🌆 Evening Drop' : 'Trip');
+const formatDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 export default function BusManagement() {
   const [buses, setBuses] = useState<Bus[]>([]);
@@ -27,6 +38,8 @@ export default function BusManagement() {
   const [expandedBusId, setExpandedBusId] = useState<string | null>(null);
   const [stops, setStops] = useState<Stop[]>([]);
   const [stopsLoading, setStopsLoading] = useState(false);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [tripsLoading, setTripsLoading] = useState(false);
 
   const loadBuses = () => {
     setLoading(true);
@@ -67,6 +80,13 @@ export default function BusManagement() {
       .then(setStops)
       .catch(() => setStops([]))
       .finally(() => setStopsLoading(false));
+
+    setTripsLoading(true);
+    fetch(`${API_URL}/api/bus/${busId}/trips`)
+      .then((r) => r.json())
+      .then(setTrips)
+      .catch(() => setTrips([]))
+      .finally(() => setTripsLoading(false));
   };
 
   const moveStop = async (index: number, direction: -1 | 1) => {
@@ -120,7 +140,7 @@ export default function BusManagement() {
 
                 {bus.tripActive ? (
                   <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                    ● On trip {bus.tripStartedAt ? `since ${new Date(bus.tripStartedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    ● {shiftLabel(bus.tripShift)} {bus.tripStartedAt ? `since ${new Date(bus.tripStartedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}` : ''}
                   </span>
                 ) : (
                   <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full">Not on a trip</span>
@@ -135,26 +155,50 @@ export default function BusManagement() {
               </div>
 
               {expandedBusId === bus.id && (
-                <div className="border-t border-slate-100 p-4 bg-slate-50">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                    Route stops {stops.length > 0 && `(${stops.length})`}
-                  </p>
-                  {stopsLoading ? (
-                    <p className="text-sm text-slate-400">Loading...</p>
-                  ) : stops.length === 0 ? (
-                    <p className="text-sm text-slate-400">No stops yet — parents add their own from the app.</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {stops.map((stop, i) => (
-                        <div key={stop.id} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
-                          <span className="text-xs text-slate-400 w-5">{i + 1}</span>
-                          <span className="text-sm text-slate-800 flex-1">{stop.name}</span>
-                          <button onClick={() => moveStop(i, -1)} disabled={i === 0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 px-1">▲</button>
-                          <button onClick={() => moveStop(i, 1)} disabled={i === stops.length - 1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 px-1">▼</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="border-t border-slate-100 p-4 bg-slate-50 space-y-5">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                      Route stops {stops.length > 0 && `(${stops.length})`}
+                    </p>
+                    {stopsLoading ? (
+                      <p className="text-sm text-slate-400">Loading...</p>
+                    ) : stops.length === 0 ? (
+                      <p className="text-sm text-slate-400">No stops yet — parents add their own from the app.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {stops.map((stop, i) => (
+                          <div key={stop.id} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
+                            <span className="text-xs text-slate-400 w-5">{i + 1}</span>
+                            <span className="text-sm text-slate-800 flex-1">{stop.name}</span>
+                            <button onClick={() => moveStop(i, -1)} disabled={i === 0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 px-1">▲</button>
+                            <button onClick={() => moveStop(i, 1)} disabled={i === stops.length - 1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30 px-1">▼</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Trip history</p>
+                    {tripsLoading ? (
+                      <p className="text-sm text-slate-400">Loading...</p>
+                    ) : trips.length === 0 ? (
+                      <p className="text-sm text-slate-400">No trips recorded yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {trips.map((trip) => (
+                          <div key={trip.id} className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                            <span className="text-slate-800 flex-1">{shiftLabel(trip.shift)}</span>
+                            <span className="text-xs text-slate-500">
+                              {formatDateTime(trip.started_at)} → {trip.ended_at ? formatDateTime(trip.ended_at) : (
+                                <span className="text-emerald-700 font-medium">in progress</span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

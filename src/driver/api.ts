@@ -6,6 +6,8 @@ export interface DriverSession {
   driver_name: string | null;
 }
 
+export type Shift = 'morning' | 'evening';
+
 async function handle<T>(res: Response): Promise<T> {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
@@ -20,8 +22,12 @@ export const driverApi = {
       body: JSON.stringify({ bus_number, pin }),
     }).then((r) => handle<DriverSession>(r)),
 
-  startTrip: (busId: string) =>
-    fetch(`${API_URL}/api/bus/${busId}/start-trip`, { method: 'POST' }).then((r) => handle(r)),
+  startTrip: (busId: string, shift: Shift) =>
+    fetch(`${API_URL}/api/bus/${busId}/start-trip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shift }),
+    }).then((r) => handle(r)),
 
   endTrip: (busId: string) =>
     fetch(`${API_URL}/api/bus/${busId}/end-trip`, { method: 'POST' }).then((r) => handle(r)),

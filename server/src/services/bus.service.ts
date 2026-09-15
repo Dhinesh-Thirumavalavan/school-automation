@@ -6,6 +6,12 @@ const APPROACHING_ETA_MINUTES = 10;
 const ARRIVED_ETA_MINUTES = 1;
 const ASSUMED_SPEED_KMH = 20; // city traffic average, used for a simple v1 ETA
 
+function shiftLabel(shift: string | null | undefined) {
+  if (shift === 'morning') return 'morning pickup';
+  if (shift === 'evening') return 'evening drop';
+  return 'trip';
+}
+
 function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -38,7 +44,7 @@ async function notifyStudentsAtStop(stopId: string, buildMessage: (studentName: 
 
 // Fired once when a driver taps Start Trip — lets every parent on the bus
 // know the trip is on, before any proximity alert would fire.
-export async function notifyTripStarted(busId: string) {
+export async function notifyTripStarted(busId: string, shift: string | null) {
   const { data: bus } = await supabase.from('buses').select('bus_number').eq('id', busId).single();
   const { data: students } = await supabase
     .from('students')
@@ -46,7 +52,7 @@ export async function notifyTripStarted(busId: string) {
     .eq('bus_id', busId);
   if (!students || students.length === 0) return;
 
-  const english = `${bus?.bus_number || 'Your child\'s bus'} has started its trip. We'll notify you as it approaches your stop.`;
+  const english = `${bus?.bus_number || 'Your child\'s bus'} has started its ${shiftLabel(shift)} trip. We'll notify you as it approaches your stop.`;
   const tamil = await translateText(english);
   const message = `${english}\n\n${tamil}`;
   for (const student of students) {
@@ -58,7 +64,7 @@ export async function notifyTripStarted(busId: string) {
 // Fired once when a driver ends a trip — safety net for any stop that never
 // got an "arrived" alert (breakdown, cut-short route, skipped today), so
 // parents aren't left waiting indefinitely for a bus that isn't coming.
-export async function notifyTripEnded(busId: string, arrivedStopIds: string[]) {
+export async function notifyTripEnded(busId: string, shift: string | null, arrivedStopIds: string[]) {
   const { data: bus } = await supabase.from('buses').select('bus_number').eq('id', busId).single();
   const { data: stops } = await supabase.from('bus_stops').select('id').eq('bus_id', busId);
   const missed = (stops || []).filter((s) => !arrivedStopIds.includes(s.id));
@@ -66,7 +72,7 @@ export async function notifyTripEnded(busId: string, arrivedStopIds: string[]) {
   for (const stop of missed) {
     await notifyStudentsAtStop(
       stop.id,
-      () => `${bus?.bus_number || 'The bus'}'s trip has ended without reaching your stop today. Please contact the school if your child still needs a ride.`
+      () => `${bus?.bus_number || 'The bus'}'s ${shiftLabel(shift)} trip has ended without reaching your stop today. Please contact the school if your child still needs a ride.`
     );
   }
 }
@@ -87,18 +93,19 @@ export async function checkProximityAndAlert(busId: string, lat: number, lon: nu
 
   const approaching: string[] = trip.alerted_stop_ids || [];
   const arrived: string[] = trip.arrived_stop_ids || [];
+  const label = shiftLabel(trip.shift);
 
   for (const stop of stops) {
     const distanceKm = haversineDistanceKm(lat, lon, stop.latitude, stop.longitude);
     const eta = etaMinutes(distanceKm);
 
     if (!approaching.includes(stop.id) && eta <= APPROACHING_ETA_MINUTES) {
-      await notifyStudentsAtStop(stop.id, (name) => `${name}'s bus is about ${eta} min away from ${stop.name}. Please be ready at the pickup point.`);
+      await notifyStudentsAtStop(stop.id, (name) => `${name}'s ${label} bus is about ${eta} min away from ${stop.name}. Please be ready at the pickup point.`);
       approaching.push(stop.id);
     }
 
     if (!arrived.includes(stop.id) && eta <= ARRIVED_ETA_MINUTES) {
-      await notifyStudentsAtStop(stop.id, () => `The bus has arrived at ${stop.name} now!`);
+      await notifyStudentsAtStop(stop.id, () => `The ${label} bus has arrived at ${stop.name} now!`);
       arrived.push(stop.id);
     }
   }
