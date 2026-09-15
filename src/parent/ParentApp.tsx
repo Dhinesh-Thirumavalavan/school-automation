@@ -8,13 +8,14 @@ import Profile from './screens/Profile';
 import AttendanceDetail from './screens/AttendanceDetail';
 import HomeworkDetail from './screens/HomeworkDetail';
 import EventsDetail from './screens/EventsDetail';
+import LeaveManagement from './screens/LeaveManagement';
 import { Skeleton } from './ui';
 
 // mapbox-gl is a large dependency — only fetch it when the Bus screen is opened
 const BusDetail = lazy(() => import('./screens/BusDetail'));
 
 type Tab = 'home' | 'inbox' | 'fees' | 'profile';
-type Pushed = 'attendance' | 'homework' | 'events' | 'bus' | null;
+type Pushed = 'attendance' | 'homework' | 'events' | 'bus' | 'leave' | null;
 
 interface ParentAppProps {
   session: ParentSession;
@@ -33,6 +34,7 @@ const pushedTitles: Record<Exclude<Pushed, null>, string> = {
   homework: 'Homework',
   events: 'Events',
   bus: 'Bus Tracking',
+  leave: 'Leave Management',
 };
 
 export default function ParentApp({ session, onLogout }: ParentAppProps) {
@@ -84,6 +86,7 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
         {pushed === 'attendance' && <AttendanceDetail student={student} />}
         {pushed === 'homework' && <HomeworkDetail student={student} />}
         {pushed === 'events' && <EventsDetail />}
+        {pushed === 'leave' && <LeaveManagement student={student} />}
         {pushed === 'bus' && (
           <Suspense fallback={<div className="p-4"><Skeleton className="h-64 rounded-2xl" /></div>}>
             <BusDetail student={student} />
@@ -97,6 +100,7 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
             onOpenHomework={() => setPushed('homework')}
             onOpenEvents={() => setPushed('events')}
             onOpenBus={() => setPushed('bus')}
+            onOpenLeave={() => setPushed('leave')}
             onOpenInbox={() => setTab('inbox')}
           />
         )}

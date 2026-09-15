@@ -14,6 +14,7 @@ import teachersRouter, { authRouter } from './routes/teachers.routes';
 import parentAuthRouter from './routes/parentAuth.routes';
 import pushRouter from './routes/push.routes';
 import busRouter from './routes/bus.routes';
+import leaveRouter from './routes/leave.routes';
 import systemRouter from './routes/system.routes';
 import historyRouter from './routes/history.routes';
 import { startBirthdayJob } from './cron/birthdayJob';
@@ -38,6 +39,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/parent-auth', parentAuthRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/bus', busRouter);
+app.use('/api/leave', leaveRouter);
 app.use('/', systemRouter);
 
 initializeWhatsApp();

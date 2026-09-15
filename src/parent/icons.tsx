@@ -64,6 +64,16 @@ export const FlagIcon = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const LeaveIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+    <path d="M3.5 9.5h17" />
+    <path d="M8 3v3" />
+    <path d="M16 3v3" />
+    <path d="m9 15 2.2 2.2L15.5 13" />
+  </svg>
+);
+
 export const ClockIcon = ({ className = base }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...stroke}>
     <circle cx="12" cy="12" r="8.5" />
