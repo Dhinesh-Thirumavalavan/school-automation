@@ -64,6 +64,26 @@ export const FlagIcon = ({ className = base }: IconProps) => (
   </svg>
 );
 
+export const ExamIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M6 3.5h9l3 3V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" />
+    <path d="M15 3.5V7h3" />
+    <path d="M8 12h8" />
+    <path d="M8 15.5h8" />
+    <path d="M8 8.5h3" />
+  </svg>
+);
+
+export const ResultsIcon = ({ className = base }: IconProps) => (
+  <svg viewBox="0 0 24 24" className={className} {...stroke}>
+    <path d="M4 19V5" />
+    <path d="M4 19h16" />
+    <rect x="7" y="12" width="3" height="7" />
+    <rect x="12.5" y="8" width="3" height="11" />
+    <rect x="18" y="14" width="3" height="5" />
+  </svg>
+);
+
 export const LeaveIcon = ({ className = base }: IconProps) => (
   <svg viewBox="0 0 24 24" className={className} {...stroke}>
     <rect x="3.5" y="4.5" width="17" height="16" rx="2" />

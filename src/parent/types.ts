@@ -58,6 +58,25 @@ export interface AnnouncementItem {
   sent_at: string;
 }
 
+export interface ExamItem {
+  id: string;
+  subject: string;
+  exam_date: string;
+  exam_day: string | null;
+  exam_time: string | null;
+  portion: string | null;
+  term: string | null;
+}
+
+export interface ResultItem {
+  id: string;
+  subject: string;
+  term: string;
+  marks: number;
+  max_marks: number;
+  grade: string | null;
+}
+
 export interface LeaveRequest {
   id: string;
   leave_type: string;

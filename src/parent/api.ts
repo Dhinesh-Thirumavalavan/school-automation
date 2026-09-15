@@ -1,5 +1,5 @@
 import { API_URL } from '../config';
-import type { AnnouncementItem, AttendanceSummary, EventItem, FeeRecord, HomeworkItem, LeaveRequest, ParentStudent, Payment } from './types';
+import type { AnnouncementItem, AttendanceSummary, EventItem, ExamItem, FeeRecord, HomeworkItem, LeaveRequest, ParentStudent, Payment, ResultItem } from './types';
 
 async function handle<T>(res: Response): Promise<T> {
   const data = await res.json();
@@ -43,4 +43,10 @@ export const parentApi = {
 
   submitLeave: (formData: FormData) =>
     fetch(`${API_URL}/api/leave`, { method: 'POST', body: formData }).then((r) => handle<LeaveRequest>(r)),
+
+  exams: (studentClass: string) =>
+    fetch(`${API_URL}/api/exams?class=${encodeURIComponent(studentClass)}`).then((r) => handle<ExamItem[]>(r)),
+
+  results: (studentId: string) =>
+    fetch(`${API_URL}/api/results/student/${studentId}`).then((r) => handle<ResultItem[]>(r)),
 };
