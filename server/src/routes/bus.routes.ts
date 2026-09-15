@@ -1,6 +1,6 @@
 import express from 'express';
 import { supabase } from '../services/supabase.service';
-import { checkProximityAndAlert } from '../services/bus.service';
+import { checkProximityAndAlert, notifyTripStarted, notifyTripEnded } from '../services/bus.service';
 
 const router = express.Router();
 
@@ -37,6 +37,7 @@ router.post('/:id/start-trip', async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+    notifyTripStarted(req.params.id).catch((err) => console.error('Trip-started notify error:', err));
     res.json(data);
   } catch (err: any) {
     console.error(err);
@@ -48,7 +49,7 @@ router.post('/:id/end-trip', async (req, res) => {
   try {
     const { data: trip } = await supabase
       .from('bus_trips')
-      .select('id')
+      .select('id, arrived_stop_ids')
       .eq('bus_id', req.params.id)
       .is('ended_at', null)
       .order('started_at', { ascending: false })
@@ -56,6 +57,7 @@ router.post('/:id/end-trip', async (req, res) => {
       .maybeSingle();
     if (trip) {
       await supabase.from('bus_trips').update({ ended_at: new Date().toISOString() }).eq('id', trip.id);
+      notifyTripEnded(req.params.id, trip.arrived_stop_ids || []).catch((err) => console.error('Trip-ended notify error:', err));
     }
     res.json({ success: true });
   } catch (err: any) {
