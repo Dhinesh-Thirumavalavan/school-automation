@@ -9,13 +9,15 @@ import AttendanceDetail from './screens/AttendanceDetail';
 import HomeworkDetail from './screens/HomeworkDetail';
 import EventsDetail from './screens/EventsDetail';
 import LeaveManagement from './screens/LeaveManagement';
+import ExamsDetail from './screens/ExamsDetail';
+import ResultsDetail from './screens/ResultsDetail';
 import { Skeleton } from './ui';
 
 // mapbox-gl is a large dependency — only fetch it when the Bus screen is opened
 const BusDetail = lazy(() => import('./screens/BusDetail'));
 
 type Tab = 'home' | 'inbox' | 'fees' | 'profile';
-type Pushed = 'attendance' | 'homework' | 'events' | 'bus' | 'leave' | null;
+type Pushed = 'attendance' | 'homework' | 'events' | 'bus' | 'leave' | 'exams' | 'results' | null;
 
 interface ParentAppProps {
   session: ParentSession;
@@ -35,6 +37,8 @@ const pushedTitles: Record<Exclude<Pushed, null>, string> = {
   events: 'Events',
   bus: 'Bus Tracking',
   leave: 'Leave Management',
+  exams: 'Exams',
+  results: 'Results',
 };
 
 export default function ParentApp({ session, onLogout }: ParentAppProps) {
@@ -87,6 +91,8 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
         {pushed === 'homework' && <HomeworkDetail student={student} />}
         {pushed === 'events' && <EventsDetail />}
         {pushed === 'leave' && <LeaveManagement student={student} />}
+        {pushed === 'exams' && <ExamsDetail student={student} />}
+        {pushed === 'results' && <ResultsDetail student={student} />}
         {pushed === 'bus' && (
           <Suspense fallback={<div className="p-4"><Skeleton className="h-64 rounded-2xl" /></div>}>
             <BusDetail student={student} />
@@ -101,6 +107,8 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
             onOpenEvents={() => setPushed('events')}
             onOpenBus={() => setPushed('bus')}
             onOpenLeave={() => setPushed('leave')}
+            onOpenExams={() => setPushed('exams')}
+            onOpenResults={() => setPushed('results')}
             onOpenInbox={() => setTab('inbox')}
           />
         )}

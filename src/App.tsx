@@ -12,8 +12,11 @@ import Settings from './components/settings/Settings';
 import SystemStatus from './components/shared/SystemStatus';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
 import BusManagement from './components/buses/BusManagement';
+import LeaveReview from './components/leave/LeaveReview';
+import ExamSchedule from './components/exams/ExamSchedule';
+import ResultsEntry from './components/results/ResultsEntry';
 
-type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings' | 'buses';
+type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings' | 'buses' | 'leave' | 'exams' | 'results';
 
 function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -55,6 +58,9 @@ function App() {
               {screen === 'students' && <StudentList />}
               {screen === 'history' && <MessageHistory />}
               {screen === 'buses' && <BusManagement />}
+              {screen === 'leave' && <LeaveReview />}
+              {screen === 'exams' && <ExamSchedule />}
+              {screen === 'results' && <ResultsEntry />}
               {screen === 'settings' && <Settings />}
             </>
           ) : (

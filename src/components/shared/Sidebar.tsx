@@ -1,6 +1,6 @@
 import { getCurrentAcademicYear } from '../../utils/academicYear';
 
-type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings' | 'buses';
+type Screen = 'compose' | 'fees' | 'students' | 'dashboard' | 'history' | 'settings' | 'buses' | 'leave' | 'exams' | 'results';
 
 interface SidebarProps {
   active: Screen;
@@ -15,6 +15,9 @@ const adminNavItems: { key: Screen; label: string; icon: string }[] = [
   { key: 'fees', label: 'Fees', icon: '💰' },
   { key: 'students', label: 'Students', icon: '🎓' },
   { key: 'buses', label: 'Buses', icon: '🚌' },
+  { key: 'leave', label: 'Leave', icon: '📝' },
+  { key: 'exams', label: 'Exams', icon: '🗓️' },
+  { key: 'results', label: 'Results', icon: '📈' },
   { key: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { parentApi } from '../api';
 import type { AnnouncementItem, AttendanceSummary, FeeRecord, ParentStudent } from '../types';
-import { BookIcon, BusIcon, ChevronRightIcon, ClockIcon, FlagIcon, LeaveIcon } from '../icons';
+import { BookIcon, BusIcon, ChevronRightIcon, ClockIcon, ExamIcon, FlagIcon, LeaveIcon, ResultsIcon } from '../icons';
 import { Card, SectionLabel, Skeleton } from '../ui';
 
 interface HomeProps {
@@ -12,10 +12,12 @@ interface HomeProps {
   onOpenEvents: () => void;
   onOpenBus: () => void;
   onOpenLeave: () => void;
+  onOpenExams: () => void;
+  onOpenResults: () => void;
   onOpenInbox: () => void;
 }
 
-export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHomework, onOpenEvents, onOpenBus, onOpenLeave, onOpenInbox }: HomeProps) {
+export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHomework, onOpenEvents, onOpenBus, onOpenLeave, onOpenExams, onOpenResults, onOpenInbox }: HomeProps) {
   const [attendance, setAttendance] = useState<AttendanceSummary | null>(null);
   const [fees, setFees] = useState<FeeRecord[]>([]);
   const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null);
@@ -102,6 +104,16 @@ export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHome
               <Card onClick={onOpenLeave} className="p-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0"><LeaveIcon /></div>
                 <span className="text-sm font-medium text-slate-800">Leave</span>
+                <ChevronRightIcon className="w-4 h-4 ml-auto text-slate-300 shrink-0" />
+              </Card>
+              <Card onClick={onOpenExams} className="p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0"><ExamIcon /></div>
+                <span className="text-sm font-medium text-slate-800">Exams</span>
+                <ChevronRightIcon className="w-4 h-4 ml-auto text-slate-300 shrink-0" />
+              </Card>
+              <Card onClick={onOpenResults} className="p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0"><ResultsIcon /></div>
+                <span className="text-sm font-medium text-slate-800">Results</span>
                 <ChevronRightIcon className="w-4 h-4 ml-auto text-slate-300 shrink-0" />
               </Card>
             </div>
