@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import ParentRoot from './parent/ParentRoot.tsx'
+import DriverApp from './driver/DriverApp.tsx'
 
-const isParentApp = window.location.pathname.startsWith('/parent')
+const path = window.location.pathname
+const isParentApp = path.startsWith('/parent')
+const isDriverApp = path.startsWith('/driver')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isParentApp ? <ParentRoot /> : <App />}
+    {isDriverApp ? <DriverApp /> : isParentApp ? <ParentRoot /> : <App />}
   </StrictMode>,
 )

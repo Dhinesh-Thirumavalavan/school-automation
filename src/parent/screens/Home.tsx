@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { parentApi } from '../api';
 import type { AnnouncementItem, AttendanceSummary, FeeRecord, ParentStudent } from '../types';
-import { BookIcon, ChevronRightIcon, ClockIcon, FlagIcon } from '../icons';
+import { BookIcon, BusIcon, ChevronRightIcon, ClockIcon, FlagIcon } from '../icons';
 import { Card, SectionLabel, Skeleton } from '../ui';
 
 interface HomeProps {
@@ -10,10 +10,11 @@ interface HomeProps {
   onOpenFees: () => void;
   onOpenHomework: () => void;
   onOpenEvents: () => void;
+  onOpenBus: () => void;
   onOpenInbox: () => void;
 }
 
-export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHomework, onOpenEvents, onOpenInbox }: HomeProps) {
+export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHomework, onOpenEvents, onOpenBus, onOpenInbox }: HomeProps) {
   const [attendance, setAttendance] = useState<AttendanceSummary | null>(null);
   const [fees, setFees] = useState<FeeRecord[]>([]);
   const [latestAnnouncement, setLatestAnnouncement] = useState<AnnouncementItem | null>(null);
@@ -90,6 +91,11 @@ export default function Home({ student, onOpenAttendance, onOpenFees, onOpenHome
               <Card onClick={onOpenEvents} className="p-4 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0"><FlagIcon /></div>
                 <span className="text-sm font-medium text-slate-800">Events</span>
+                <ChevronRightIcon className="w-4 h-4 ml-auto text-slate-300 shrink-0" />
+              </Card>
+              <Card onClick={onOpenBus} className="p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0"><BusIcon /></div>
+                <span className="text-sm font-medium text-slate-800">Bus</span>
                 <ChevronRightIcon className="w-4 h-4 ml-auto text-slate-300 shrink-0" />
               </Card>
             </div>
