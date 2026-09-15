@@ -4,6 +4,12 @@ import { checkProximityAndAlert } from '../services/bus.service';
 
 const router = express.Router();
 
+router.get('/', async (req, res) => {
+  const { data, error } = await supabase.from('buses').select('id, bus_number, driver_name').order('bus_number');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 // Driver login: bus number + shared PIN, no individual driver accounts for MVP
 router.post('/login', async (req, res) => {
   try {
@@ -103,20 +109,75 @@ router.get('/:id/stops', async (req, res) => {
   res.json(data);
 });
 
+// Parent self-service: create their own stop (a pin they placed) and assign
+// their child to it. Appended to the end of the route; an admin can reorder
+// it later to match the actual driving order.
+router.post('/stops', async (req, res) => {
+  try {
+    const { student_id, bus_id, name, latitude, longitude } = req.body;
+    if (!student_id || !bus_id || !name || latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'student_id, bus_id, name, latitude, longitude are required' });
+    }
+
+    const { data: existing } = await supabase
+      .from('bus_stops')
+      .select('stop_order')
+      .eq('bus_id', bus_id)
+      .order('stop_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextOrder = (existing?.stop_order ?? 0) + 1;
+
+    const { data: stop, error } = await supabase
+      .from('bus_stops')
+      .insert([{ bus_id, stop_order: nextOrder, name, latitude, longitude }])
+      .select()
+      .single();
+    if (error) throw error;
+
+    const { error: updateError } = await supabase.from('students').update({ bus_stop_id: stop.id }).eq('id', student_id);
+    if (updateError) throw updateError;
+
+    res.json(stop);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: reorder a bus's stops to match the real driving order
+router.put('/stops/reorder', async (req, res) => {
+  try {
+    const { orderedStopIds } = req.body as { orderedStopIds: string[] };
+    if (!Array.isArray(orderedStopIds)) return res.status(400).json({ error: 'orderedStopIds must be an array' });
+
+    await Promise.all(
+      orderedStopIds.map((id, index) => supabase.from('bus_stops').update({ stop_order: index + 1 }).eq('id', id))
+    );
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Convenience lookup for the parent app: which bus/stop is this student on?
 router.get('/by-student/:studentId', async (req, res) => {
   try {
     const { data: student, error } = await supabase
       .from('students')
-      .select('bus_stop_id, bus_stops(id, bus_id, name, latitude, longitude, stop_order)')
+      .select('bus_id, bus_stop_id, buses(id, bus_number, driver_name), bus_stops(id, bus_id, name, latitude, longitude, stop_order)')
       .eq('id', req.params.studentId)
       .single();
     if (error) throw error;
-    if (!student?.bus_stop_id) return res.json({ assigned: false });
+
+    if (!student?.bus_id) return res.json({ busAssigned: false, stopAssigned: false });
+
+    const bus = student.buses as any;
+    if (!student.bus_stop_id) return res.json({ busAssigned: true, stopAssigned: false, bus });
 
     const stop = student.bus_stops as any;
-    const { data: bus } = await supabase.from('buses').select('id, bus_number, driver_name').eq('id', stop.bus_id).single();
-    res.json({ assigned: true, bus, stop });
+    res.json({ busAssigned: true, stopAssigned: true, bus, stop });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
