@@ -17,6 +17,25 @@ export default function DriverApp() {
   const latestPosition = useRef<{ lat: number; lon: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  const requestWakeLock = async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      }
+    } catch {
+      // not supported, or permission denied — non-critical, tracking still works if the screen stays on manually
+    }
+  };
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && tripActive) requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [tripActive]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +67,7 @@ export default function DriverApp() {
     setGpsError('');
     await driverApi.startTrip(session.id);
     setTripActive(true);
+    requestWakeLock();
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
@@ -77,6 +97,8 @@ export default function DriverApp() {
     if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
     watchIdRef.current = null;
     intervalRef.current = null;
+    wakeLockRef.current?.release().catch(() => {});
+    wakeLockRef.current = null;
     await driverApi.endTrip(session.id);
     setTripActive(false);
     setLastSent(null);
@@ -160,7 +182,7 @@ export default function DriverApp() {
         )}
 
         {gpsError && <p className="text-xs text-red-600 mt-3">{gpsError}</p>}
-        <p className="text-xs text-slate-400 mt-6">Keep this screen open and your phone charging during the trip.</p>
+        <p className="text-xs text-slate-400 mt-6">This screen stays awake automatically during a trip. Keep it open and your phone charging.</p>
       </div>
     </div>
   );
