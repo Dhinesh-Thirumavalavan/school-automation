@@ -7,11 +7,61 @@ interface AttendanceDetailProps {
   student: ParentStudent;
 }
 
+const weekdayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const toDateKey = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+function AttendanceCalendar({ days }: { days: { date: string; status: string }[] }) {
+  const statusByDate = new Map(days.map((d) => [d.date, d.status]));
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const todayKey = toDateKey(year, month, today.getDate());
+
+  const cells: (number | null)[] = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  return (
+    <div>
+      <p className="text-sm font-semibold text-slate-800 mb-2">
+        {today.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+      </p>
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {weekdayLabels.map((w, i) => (
+          <span key={i} className="text-[10px] font-semibold text-slate-400">{w}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (day === null) return <div key={i} />;
+          const key = toDateKey(year, month, day);
+          const status = statusByDate.get(key);
+          const isToday = key === todayKey;
+          const bg = status === 'present' ? 'bg-emerald-500 text-white' : status === 'absent' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500';
+          return (
+            <div
+              key={i}
+              className={`aspect-square rounded-lg flex items-center justify-center text-xs font-medium ${bg} ${isToday ? 'ring-2 ring-offset-1 ring-emerald-700' : ''}`}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Present</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Absent</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-100 border border-slate-200" /> No record</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AttendanceDetail({ student }: AttendanceDetailProps) {
   const [data, setData] = useState<AttendanceSummary | null>(null);
 
   useEffect(() => {
-    parentApi.attendance(student.id).then(setData).catch(() => setData(null));
+    parentApi.attendance(student.id, 60).then(setData).catch(() => setData(null));
   }, [student.id]);
 
   if (!data) {
@@ -59,23 +109,10 @@ export default function AttendanceDetail({ student }: AttendanceDetailProps) {
       </div>
 
       <div>
-        <SectionLabel>Recent days</SectionLabel>
-        {data.days.length === 0 ? (
-          <p className="text-sm text-slate-400">No attendance recorded yet.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {data.days.map((d) => (
-              <Card key={d.date} className="px-3 py-2.5 flex items-center justify-between">
-                <span className="text-sm text-slate-700">
-                  {new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </span>
-                <span className={`text-xs font-semibold ${d.status === 'present' ? 'text-emerald-700' : 'text-red-600'}`}>
-                  {d.status.charAt(0).toUpperCase() + d.status.slice(1)}
-                </span>
-              </Card>
-            ))}
-          </div>
-        )}
+        <SectionLabel>Calendar</SectionLabel>
+        <Card className="p-4">
+          <AttendanceCalendar days={data.days} />
+        </Card>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { API_URL } from '../config';
-import type { AnnouncementItem, AttendanceSummary, EventItem, FeeRecord, HomeworkItem, ParentStudent, Payment } from './types';
+import type { AnnouncementItem, AttendanceSummary, EventItem, FeeRecord, HomeworkItem, LeaveRequest, ParentStudent, Payment } from './types';
 
 async function handle<T>(res: Response): Promise<T> {
   const data = await res.json();
@@ -28,8 +28,8 @@ export const parentApi = {
   payments: (studentId: string) =>
     fetch(`${API_URL}/api/students/${studentId}/payments`).then((r) => handle<Payment[]>(r)),
 
-  attendance: (studentId: string) =>
-    fetch(`${API_URL}/api/attendance/student/${studentId}`).then((r) => handle<AttendanceSummary>(r)),
+  attendance: (studentId: string, limit = 30) =>
+    fetch(`${API_URL}/api/attendance/student/${studentId}?limit=${limit}`).then((r) => handle<AttendanceSummary>(r)),
 
   homework: (studentClass: string) =>
     fetch(`${API_URL}/api/homework?class=${encodeURIComponent(studentClass)}`).then((r) => handle<HomeworkItem[]>(r)),
@@ -37,4 +37,10 @@ export const parentApi = {
   events: () => fetch(`${API_URL}/api/events`).then((r) => handle<EventItem[]>(r)),
 
   announcements: () => fetch(`${API_URL}/api/message-history`).then((r) => handle<AnnouncementItem[]>(r)),
+
+  leaveHistory: (studentId: string) =>
+    fetch(`${API_URL}/api/leave/student/${studentId}`).then((r) => handle<LeaveRequest[]>(r)),
+
+  submitLeave: (formData: FormData) =>
+    fetch(`${API_URL}/api/leave`, { method: 'POST', body: formData }).then((r) => handle<LeaveRequest>(r)),
 };

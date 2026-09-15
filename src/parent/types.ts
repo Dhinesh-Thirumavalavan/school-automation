@@ -57,3 +57,14 @@ export interface AnnouncementItem {
   audience: string;
   sent_at: string;
 }
+
+export interface LeaveRequest {
+  id: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  attachment_url: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  submitted_at: string;
+}
