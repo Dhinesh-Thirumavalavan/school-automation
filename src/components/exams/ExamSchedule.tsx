@@ -13,12 +13,18 @@ interface Exam {
   term: string | null;
 }
 
-const classOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
+const defaultClassOptions = ['LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
 
-export default function ExamSchedule() {
+interface ExamScheduleProps {
+  classOptions?: string[];
+}
+
+export default function ExamSchedule({ classOptions }: ExamScheduleProps) {
+  const restricted = !!classOptions && classOptions.length > 0;
+  const options = restricted ? classOptions! : defaultClassOptions;
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [classFilter, setClassFilter] = useState('');
+  const [classFilter, setClassFilter] = useState(restricted ? options[0] : '');
   const [showForm, setShowForm] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
 
@@ -95,13 +101,15 @@ export default function ExamSchedule() {
       </div>
 
       <div className="flex gap-2 mb-4 flex-wrap">
-        <button
-          onClick={() => setClassFilter('')}
-          className={`text-xs px-3 py-1.5 rounded-full border ${!classFilter ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-600'}`}
-        >
-          All Classes
-        </button>
-        {classOptions.map((c) => (
+        {!restricted && (
+          <button
+            onClick={() => setClassFilter('')}
+            className={`text-xs px-3 py-1.5 rounded-full border ${!classFilter ? 'bg-emerald-600 text-white border-emerald-600' : 'border-slate-300 text-slate-600'}`}
+          >
+            All Classes
+          </button>
+        )}
+        {options.map((c) => (
           <button
             key={c}
             onClick={() => setClassFilter(c)}
@@ -137,6 +145,7 @@ export default function ExamSchedule() {
 
       {showForm && (
         <ExamFormModal
+          classOptions={options}
           initial={editingExam ? {
             class: editingExam.class,
             subject: editingExam.subject,
@@ -144,7 +153,7 @@ export default function ExamSchedule() {
             exam_time: editingExam.exam_time || '',
             portion: editingExam.portion || '',
             term: editingExam.term || '',
-          } : undefined}
+          } : (restricted ? { class: classFilter, subject: '', exam_date: '', exam_time: '', portion: '', term: '' } : undefined)}
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditingExam(null); }}
         />

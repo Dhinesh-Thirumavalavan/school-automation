@@ -58,7 +58,7 @@ function App() {
               {screen === 'students' && <StudentList />}
               {screen === 'history' && <MessageHistory />}
               {screen === 'buses' && <BusManagement />}
-              {screen === 'leave' && <LeaveReview />}
+              {screen === 'leave' && <LeaveReview role="principal" />}
               {screen === 'exams' && <ExamSchedule />}
               {screen === 'results' && <ResultsEntry />}
               {screen === 'settings' && <Settings />}
