@@ -10,6 +10,7 @@ export interface ParentStudent {
 export interface ParentSession {
   phone: string;
   students: ParentStudent[];
+  isDemo?: boolean;
 }
 
 export interface FeeRecord {

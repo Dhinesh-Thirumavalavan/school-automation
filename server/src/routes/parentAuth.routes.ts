@@ -16,6 +16,11 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 
 const cleanPhone = (phone: string) => (phone || '').replace(/[^0-9]/g, '');
 
+// Fixed preview account for sharing the parent app with people who aren't a real
+// parent (e.g. showing it to other school owners) — no OTP, seeded with a
+// harmless fake number so nothing here ever reaches a real WhatsApp inbox.
+const DEMO_PHONE = '9999999999';
+
 router.post('/request-otp', async (req, res) => {
   try {
     const phone = cleanPhone(req.body.phone);
@@ -64,6 +69,26 @@ router.post('/verify-otp', async (req, res) => {
     if (error) throw error;
 
     res.json({ phone, students: students || [] });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public demo login — no OTP. Always resolves to the fixed DEMO_PHONE account,
+// never an arbitrary number, so this can't be used to look up a real family.
+router.get('/demo', async (_req, res) => {
+  try {
+    const { data: students, error } = await supabase
+      .from('students')
+      .select('id, name, class, section, roll_no, parent_name')
+      .or(`parent_phone.eq.${DEMO_PHONE},alternate_phone.eq.${DEMO_PHONE}`);
+    if (error) throw error;
+    if (!students || students.length === 0) {
+      return res.status(404).json({ error: 'Demo account is not set up yet.' });
+    }
+
+    res.json({ phone: DEMO_PHONE, students });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message });
