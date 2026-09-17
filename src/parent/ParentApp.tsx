@@ -86,6 +86,20 @@ export default function ParentApp({ session, onLogout }: ParentAppProps) {
         )}
       </header>
 
+      {session.isDemo && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between gap-3 text-xs">
+          <span className="text-amber-800 font-medium">🎓 Demo preview — sample data, not a real account</span>
+          <a
+            href="https://wa.me/919600849664?text=Kalvi%20demo%20feedback%3A%20"
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 font-semibold text-emerald-700 underline"
+          >
+            Send feedback
+          </a>
+        </div>
+      )}
+
       <main className="flex-1 overflow-y-auto pb-4">
         {pushed === 'attendance' && <AttendanceDetail student={student} />}
         {pushed === 'homework' && <HomeworkDetail student={student} />}

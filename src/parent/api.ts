@@ -22,6 +22,9 @@ export const parentApi = {
       body: JSON.stringify({ phone, otp }),
     }).then((r) => handle<{ phone: string; students: ParentStudent[] }>(r)),
 
+  demoLogin: () =>
+    fetch(`${API_URL}/api/parent-auth/demo`).then((r) => handle<{ phone: string; students: ParentStudent[] }>(r)),
+
   fees: (studentId: string, all = false) =>
     fetch(`${API_URL}/api/students/${studentId}/fees${all ? '?all=true' : ''}`).then((r) => handle<FeeRecord[]>(r)),
 

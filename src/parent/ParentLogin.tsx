@@ -11,6 +11,7 @@ export default function ParentLogin({ onLogin }: ParentLoginProps) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRequestOtp = async (e: React.FormEvent) => {
@@ -24,6 +25,19 @@ export default function ParentLogin({ onLogin }: ParentLoginProps) {
       setError(err.message || 'Could not send OTP');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTryDemo = async () => {
+    setError('');
+    setDemoLoading(true);
+    try {
+      const data = await parentApi.demoLogin();
+      onLogin({ phone: data.phone, students: data.students, isDemo: true });
+    } catch (err: any) {
+      setError(err.message || 'Demo is not available right now');
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -73,6 +87,19 @@ export default function ParentLogin({ onLogin }: ParentLoginProps) {
               className="w-full bg-emerald-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
             >
               {loading ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <div className="flex-1 h-px bg-slate-200" />
+              or
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <button
+              type="button"
+              onClick={handleTryDemo}
+              disabled={demoLoading}
+              className="w-full border border-emerald-200 text-emerald-700 bg-emerald-50 text-sm font-medium py-2.5 rounded-lg hover:bg-emerald-100 disabled:opacity-50"
+            >
+              {demoLoading ? 'Loading demo...' : '👀 Try the Demo (no login needed)'}
             </button>
           </form>
         ) : (
